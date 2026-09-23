@@ -13,11 +13,10 @@ direto pelo dashboard.
   repositorio do projeto - depois disso o Render leu o `render.yaml`
   sozinho e ja sugeriu criar o web service certo, sem configurar nada manual
 - Build: 42,5s (pip install + start)
-- Request morna (logo depois do deploy): ~0,8s
-- Cold start: o proprio Render avisa no dashboard que instancia free
-  "spins down with inactivity" e pode atrasar a primeira requisicao em
-  **50s ou mais** depois de ~15min sem trafego. Confirmar numero real
-  precisa de um teste depois de deixar o servico hibernando.
+- Request morna: 0,3-0,8s
+- Cold start medido de verdade: **21,65s** na primeira requisicao depois de
+  ~32min sem trafego (o Render avisa no dashboard que pode chegar a 50s+,
+  mas no teste ficou bem abaixo disso)
 - Sem custo, sem cartao pedido em nenhum momento
 
 ## Hugging Face Spaces (free tier)
@@ -38,7 +37,7 @@ etc via Docker) sem pagar - diferente do que era antes.
 Pro nosso caso, isso praticamente decide a questao: o Render aceita o
 FastAPI de graca e sem fricao (só autorizar o repo), o HF Spaces free tier
 bloqueia exatamente o cenario que a gente precisa (rodar a API). Cold start
-existe no Render free (~50s+ apos idle) mas e aceitavel pra MVP/demo -
+existe no Render free (~22s apos idle, medido) mas e aceitavel pra MVP/demo -
 o normal seria manter isso em mente na hora de apresentar o projeto (dar um
 "ping" na API antes da demonstracao).
 
