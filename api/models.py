@@ -80,16 +80,48 @@ class Doador(DoadorBase):
     criado_em: datetime
 
 
+def _limpa_necessidades(itens: list[str]) -> list[str]:
+    # minuscula, sem espaco nas pontas, sem vazio e sem repetido (mantem a ordem)
+    limpos = [i.strip().lower() for i in itens]
+    return list(dict.fromkeys(i for i in limpos if i))
+
+
 class OngBase(BaseModel):
-    nome: str
-    cnpj: str
-    endereco: str
-    cidade: str
-    estado: str
-    latitude: float | None = None
-    longitude: float | None = None
-    capacidade_kg: float
+    nome: str = Field(min_length=1, max_length=200)
+    cnpj: str  # sem mascara, igual ao schema.sql
+    endereco: str = Field(min_length=1, max_length=300)
+    cidade: str = Field(min_length=1, max_length=100)
+    estado: str = Field(pattern=UF_RE)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    capacidade_kg: float = Field(ge=0)
     necessidades: list[str] = []  # tipos de alimento que a ONG aceita receber
+
+    @field_validator("nome", "endereco", "cidade")
+    @classmethod
+    def _sem_espacos_nas_pontas(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("nao pode ser vazio")
+        return v
+
+    @field_validator("estado")
+    @classmethod
+    def _uf_maiuscula(cls, v: str) -> str:
+        return v.upper()
+
+    @field_validator("necessidades")
+    @classmethod
+    def _necessidades(cls, v: list[str]) -> list[str]:
+        return _limpa_necessidades(v)
+
+    @field_validator("cnpj")
+    @classmethod
+    def _cnpj_14_digitos(cls, v: str) -> str:
+        digitos = "".join(c for c in v if c.isdigit())
+        if len(digitos) != 14:
+            raise ValueError("CNPJ precisa ter 14 digitos")
+        return digitos
 
 
 class OngCreate(OngBase):
@@ -97,14 +129,28 @@ class OngCreate(OngBase):
 
 
 class OngUpdate(BaseModel):
-    nome: str | None = None
-    endereco: str | None = None
-    cidade: str | None = None
-    estado: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    capacidade_kg: float | None = None
+    """Atualizacao parcial. O CNPJ nao muda depois de criada."""
+
+    nome: str | None = Field(default=None, min_length=1, max_length=200)
+    endereco: str | None = Field(default=None, min_length=1, max_length=300)
+    cidade: str | None = Field(default=None, min_length=1, max_length=100)
+    estado: str | None = Field(default=None, pattern=UF_RE)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    capacidade_kg: float | None = Field(default=None, ge=0)
     necessidades: list[str] | None = None
+
+    @model_validator(mode="after")
+    def _obrigatorios_nao_viram_null(self):
+        # so as coordenadas podem ser limpas com null
+        for campo in ("nome", "endereco", "cidade", "estado", "capacidade_kg", "necessidades"):
+            if campo in self.model_fields_set and getattr(self, campo) is None:
+                raise ValueError(f"{campo} nao pode ser null")
+        if self.estado is not None:
+            self.estado = self.estado.upper()
+        if self.necessidades is not None:
+            self.necessidades = _limpa_necessidades(self.necessidades)
+        return self
 
 
 class Ong(OngBase):
@@ -134,8 +180,15 @@ class LoteBase(BaseModel):
     tipo: str | None = None  # a IA preenche no POST /lotes (dia 15+), por enquanto manual
 
 
+def _validade_nao_vencida(v: date | None) -> date | None:
+    # so na entrada: um lote ja gravado pode vencer depois e continuar legivel
+    if v is not None and v < date.today():
+        raise ValueError("lote vencido nao pode ser cadastrado")
+    return v
+
+
 class LoteCreate(LoteBase):
-    pass
+    _checa_validade = field_validator("validade")(_validade_nao_vencida)
 
 
 class LoteUpdate(BaseModel):
@@ -145,6 +198,16 @@ class LoteUpdate(BaseModel):
     armazenamento: Armazenamento | None = None
     tipo: str | None = None
     status: StatusLote | None = None
+
+    _checa_validade = field_validator("validade")(_validade_nao_vencida)
+
+    @model_validator(mode="after")
+    def _obrigatorios_nao_viram_null(self):
+        # so o tipo pode ser limpo com null
+        for campo in ("descricao", "quantidade_kg", "validade", "armazenamento", "status"):
+            if campo in self.model_fields_set and getattr(self, campo) is None:
+                raise ValueError(f"{campo} nao pode ser null")
+        return self
 
 
 class Lote(LoteBase):

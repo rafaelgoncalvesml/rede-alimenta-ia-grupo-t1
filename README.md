@@ -69,6 +69,23 @@ setar `prioridade` (so o modelo vai escrever isso).
 - 201 criou, 204 apagou, 404 nao achou, 409 documento repetido ou doador com
   lotes, 422 dado invalido.
 
+## ONG e Lote: regras
+
+ONG:
+- `cnpj` com ou sem mascara, 14 digitos, guardado sem mascara. CNPJ repetido
+  volta 409. Nao muda depois de criada.
+- `capacidade_kg` >= 0. `necessidades` vira minuscula, sem repetido e sem vazio.
+
+Lote:
+- Nao aceita `validade` anterior a hoje (422). A checagem e so na entrada.
+- `GET /lotes` aceita `?status=` e `?doador_id=` (pro painel da ONG listar so os
+  disponiveis).
+- Status so anda assim: `disponivel` -> `reservado` ou `descartado`;
+  `reservado` -> `disponivel`, `doado` ou `descartado`. `doado` e `descartado`
+  sao finais: qualquer edicao volta 409, e `disponivel` nao pula direto pra `doado`.
+- So apaga lote `disponivel` ou `descartado`; `reservado` e `doado` voltam 409.
+- `doador_id` nao muda; `prioridade` so o modelo escreve.
+
 ## Status
 
 Semana 1 de producao. Ver `docs/checkpoint-semana1.md`.
