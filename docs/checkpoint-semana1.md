@@ -47,7 +47,7 @@ Na rodada apareceram tres problemas:
 - Apagar um doador que tinha lote deixava o lote orfao; no Postgres seria erro de
   chave estrangeira. Virou 409 no dia 8.
 
-Como o storage e em memoria, o `--reload` apaga os dados a cada salvamento e o
+Com o storage em memoria (situacao do dia 6), o `--reload` apaga os dados a cada salvamento e o
 Streamlit passa a receber 404 no `doador_id`. Por isso o `api/seed_dev.py`.
 
 Nao consegui testar o lado do Streamlit porque o formulario do Gustavo nao
@@ -65,10 +65,32 @@ ve-lo em `GET /lotes`.
   descricao. Na API `armazenamento` e obrigatorio, entao o Charles precisa
   decidir o que fazer com esses nulos antes do dia 11.
 - Falta a tabela `doacoes` no `schema.sql`. Entra junto com o dia 12
-  (`POST /doacoes`), mas o desenho pode sair antes, no dia 10, quando a API
-  ligar no Supabase.
+  (`POST /doacoes`).
 - Os problemas do CRUD (documento repetido, delete com lote, validacao) sairam
   nos dias 8 e 9. Codigos: 201 criou, 404 nao achou, 409 conflito (documento ou
   CNPJ repetido, doador com lote, status invalido), 422 dado invalido.
 - Python: rodei local no 3.14 e o Dockerfile planejado usa 3.10-slim. Vale o
   Anthony rodar os testes em 3.10 no CI pra pegar diferenca cedo.
+
+## Dia 10: banco em nuvem
+
+A API agora fala com o Supabase. O `api/storage.py` tem dois backends com a
+mesma interface, escolhidos pela variavel `STORAGE` (`memory` por padrao,
+`postgres` pra usar o banco). Os testes ficam sempre em memoria.
+
+- Schema aplicado com `infra/db/aplicar_schema.py`, com RLS ligado nas tres
+  tabelas (o Supabase expoe o schema `public` numa API REST propria; sem RLS ela
+  ficaria aberta pra quem tiver a chave publica. A nossa API conecta como
+  `postgres`, que ignora o RLS).
+- Testei o fluxo inteiro contra o banco (CRUD, 409, filtros, transicao de
+  status) e a persistencia depois de reiniciar a API. Cada chamada leva uns 2
+  segundos porque o pooler fica em us-east-2. Vale lembrar disso na demo e ver
+  se compensa recriar o projeto numa regiao mais perto.
+- O seed (`python -m api.seed_dev`) rodou no banco: 1 doador e 1 ONG rotulados
+  DEMO. O seed maior de demo (3 doadores, 4 ONGs, 5 lotes) e do Charles, dia 21.
+- Erros de banco viram resposta limpa: violacao de unique ou FK vira 409 e banco
+  fora do ar vira 503.
+- Ponto de atencao: o free tier do Supabase pausa o projeto depois de 1 semana
+  sem uso. Antes da defesa, abrir o painel e conferir que esta ativo.
+- Nao ha pytest contra o Postgres de verdade (so tem um banco, e seria o de
+  demo). Se der tempo, montar um schema separado so pra teste.

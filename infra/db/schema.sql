@@ -1,6 +1,6 @@
 -- Schema Postgres (Supabase) pra Rede Alimenta IA.
--- Rodar no SQL editor do Supabase quando a conexao real entrar (dia 10).
--- Doador (dia 4), ONG e lote (dia 5). Doacao entra junto com o matching.
+-- Aplicar com: python infra/db/aplicar_schema.py (ou colar no SQL editor do Supabase).
+-- Pode rodar de novo sem estragar nada. Doacao entra junto com o matching (dia 12).
 
 create table if not exists doadores (
     id bigint generated always as identity primary key,
@@ -43,3 +43,10 @@ create table if not exists lotes (
     prioridade text, -- preenchido pela IA
     criado_em timestamptz not null default now()
 );
+
+-- O Supabase expoe tabelas do schema public numa API REST propria (PostgREST).
+-- Com RLS ligado e sem policy, essa API nao le nem escreve nada. A nossa API
+-- conecta como o dono das tabelas (postgres), que ignora o RLS.
+alter table doadores enable row level security;
+alter table ongs enable row level security;
+alter table lotes enable row level security;

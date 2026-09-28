@@ -33,11 +33,24 @@ uvicorn api.main:app --reload
 
 Swagger em http://localhost:8000/docs e health check em `/health`.
 
-O storage ainda e em memoria, entao tudo some quando a API reinicia. Com a API
-de pe, `python -m api.seed_dev` cadastra um doador e uma ONG de exemplo (o lote
-precisa de um `doador_id` que exista).
+### Onde os dados ficam
 
-Testes: `pytest api`.
+A variavel `STORAGE` escolhe:
+
+- `memory` (padrao): sem banco, tudo some quando a API reinicia. E o que os
+  testes usam e o que roda sem configurar nada.
+- `postgres`: Supabase, via `SUPABASE_DB_URL` (copie `.env.example` pra `.env` e
+  preencha; o `.env` nunca vai pro repo). No PowerShell:
+  `$env:STORAGE="postgres"; uvicorn api.main:app`.
+
+Na primeira vez no banco, crie as tabelas com
+`python infra/db/aplicar_schema.py` (pode rodar de novo sem problema).
+`GET /health/db` mostra qual storage esta ativo e, no Postgres, testa a conexao.
+
+Com a API de pe, `python -m api.seed_dev` cadastra um doador e uma ONG de exemplo
+(o lote precisa de um `doador_id` que exista). Ele nao duplica se ja tiver doador.
+
+Testes: `pytest api` (sempre em memoria, nunca tocam o banco).
 
 ## Contrato pro Streamlit
 

@@ -1,58 +1,49 @@
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, HTTPException
 
 from api.models import Doador, DoadorCreate, DoadorUpdate
+from api.storage import get_storage
 
 router = APIRouter(prefix="/doadores", tags=["doadores"])
 
-# storage em memoria ate a conexao com o Supabase entrar (dia 10 do
-# cronograma) - ver infra/db/schema.sql pra tabela real
-_doadores: dict[int, Doador] = {}
-_proximo_id = 1
+
+def _pega_doador(doador_id: int) -> Doador:
+    linha = get_storage().buscar("doadores", doador_id)
+    if linha is None:
+        raise HTTPException(status_code=404, detail="Doador nao encontrado")
+    return Doador(**linha)
 
 
 @router.post("", response_model=Doador, status_code=201)
 def criar_doador(dados: DoadorCreate) -> Doador:
-    global _proximo_id
-    if any(d.documento == dados.documento for d in _doadores.values()):
+    db = get_storage()
+    if db.existe("doadores", documento=dados.documento):
         raise HTTPException(status_code=409, detail="Ja existe doador com esse documento")
-    doador = Doador(id=_proximo_id, criado_em=datetime.now(timezone.utc), **dados.model_dump())
-    _doadores[doador.id] = doador
-    _proximo_id += 1
-    return doador
+    return Doador(**db.criar("doadores", dados.model_dump(mode="json")))
 
 
 @router.get("", response_model=list[Doador])
 def listar_doadores() -> list[Doador]:
-    return list(_doadores.values())
+    return [Doador(**l) for l in get_storage().listar("doadores")]
 
 
 @router.get("/{doador_id}", response_model=Doador)
 def buscar_doador(doador_id: int) -> Doador:
-    doador = _doadores.get(doador_id)
-    if doador is None:
-        raise HTTPException(status_code=404, detail="Doador nao encontrado")
-    return doador
+    return _pega_doador(doador_id)
 
 
 @router.put("/{doador_id}", response_model=Doador)
 def atualizar_doador(doador_id: int, dados: DoadorUpdate) -> Doador:
-    doador = _doadores.get(doador_id)
-    if doador is None:
-        raise HTTPException(status_code=404, detail="Doador nao encontrado")
-    atualizado = doador.model_copy(update=dados.model_dump(exclude_unset=True))
-    _doadores[doador_id] = atualizado
-    return atualizado
+    atual = _pega_doador(doador_id)
+    mudancas = dados.model_dump(exclude_unset=True, mode="json")
+    if not mudancas:
+        return atual
+    return Doador(**get_storage().atualizar("doadores", doador_id, mudancas))
 
 
 @router.delete("/{doador_id}", status_code=204)
 def remover_doador(doador_id: int) -> None:
-    if doador_id not in _doadores:
-        raise HTTPException(status_code=404, detail="Doador nao encontrado")
-    # import aqui dentro porque lotes.py ja importa este modulo
-    from api.routers import lotes
-
-    if any(l.doador_id == doador_id for l in lotes._lotes.values()):
+    _pega_doador(doador_id)
+    db = get_storage()
+    if db.existe("lotes", doador_id=doador_id):
         raise HTTPException(status_code=409, detail="Doador tem lotes cadastrados")
-    del _doadores[doador_id]
+    db.apagar("doadores", doador_id)

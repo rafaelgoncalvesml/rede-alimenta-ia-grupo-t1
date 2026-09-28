@@ -1,7 +1,7 @@
 """Popula a API local com um doador e uma ONG de exemplo.
 
-Como o storage ainda e em memoria, precisa rodar de novo toda vez que a API
-reinicia. Sai quando o banco em nuvem entrar (dia 10).
+Com STORAGE=memory precisa rodar de novo toda vez que a API reinicia. Com
+STORAGE=postgres roda uma vez so: se ja tem doador, nao faz nada.
 
     python -m api.seed_dev
 """
