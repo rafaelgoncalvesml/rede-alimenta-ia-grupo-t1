@@ -24,10 +24,10 @@ Na rodada apareceram tres problemas:
 
 - Lote aceitava `quantidade_kg` negativa ou zero e `descricao` vazia, o que o
   `schema.sql` recusa. Corrigido em `api/models.py` (agora 422).
-- Doador com `documento` repetido volta 201, mas o schema tem `unique`. Fica pro
-  dia 8 (validacao e codigos HTTP), deve virar 409.
-- Apagar um doador que tem lote deixa o lote orfao; no Postgres seria erro de
-  chave estrangeira. Tambem dia 8.
+- Doador com `documento` repetido voltava 201, mas o schema tem `unique`. Virou
+  409 no dia 8.
+- Apagar um doador que tinha lote deixava o lote orfao; no Postgres seria erro de
+  chave estrangeira. Virou 409 no dia 8.
 
 Como o storage e em memoria, o `--reload` apaga os dados a cada salvamento e o
 Streamlit passa a receber 404 no `doador_id`. Por isso o `api/seed_dev.py`.
@@ -49,7 +49,9 @@ ve-lo em `GET /lotes`.
 - Falta a tabela `doacoes` no `schema.sql`. Entra junto com o dia 12
   (`POST /doacoes`), mas o desenho pode sair antes, no dia 10, quando a API
   ligar no Supabase.
-- Dia 8 pra mim ficou maior: validacao do Doador, 409 de duplicado, bloqueio de
-  delete com lote. Nao da pra deixar pra depois porque o Gustavo consome no dia 8.
+- Os dois problemas do doador (documento repetido e delete com lote) ja sairam
+  no dia 8, junto com a validacao do CRUD de Doador. Codigos: 201 criou, 404 nao
+  achou, 409 documento repetido ou doador com lote, 422 dado invalido. ONG e
+  Lote pegam o mesmo tratamento no dia 9.
 - Python: rodei local no 3.14 e o Dockerfile planejado usa 3.10-slim. Vale o
   Anthony rodar os testes em 3.10 no CI pra pegar diferenca cedo.

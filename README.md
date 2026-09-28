@@ -59,6 +59,16 @@ tem que ser maior que zero e `descricao` nao pode ser vazia (422 caso contrario)
 `status`, `prioridade` e `id` voltam preenchidos pela API; o cliente nao consegue
 setar `prioridade` (so o modelo vai escrever isso).
 
+## Doador: regras e codigos HTTP
+
+- `documento` aceita com ou sem mascara, mas precisa ter 11 digitos (`fisica`)
+  ou 14 (`juridica`); a API guarda so os digitos. Nao valida digito verificador.
+- `estado` e a sigla com 2 letras (vira maiuscula). `email`, se vier, precisa ter
+  formato de e-mail. Latitude entre -90 e 90, longitude entre -180 e 180.
+- `PUT /doadores/{id}` e atualizacao parcial; documento e tipo de pessoa nao mudam.
+- 201 criou, 204 apagou, 404 nao achou, 409 documento repetido ou doador com
+  lotes, 422 dado invalido.
+
 ## Status
 
 Semana 1 de producao. Ver `docs/checkpoint-semana1.md`.
