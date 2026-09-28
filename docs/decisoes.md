@@ -29,8 +29,8 @@ se os dados de lote fossem heterogeneos por tipo de alimento, o que nao e
 o nosso caso.
 
 **Decisao: Supabase (Postgres) pra tudo.** Conexao real com a API entra no
-dia 10 do cronograma; ate la os CRUDs rodam com storage em memoria
-(esqueleto).
+dia 10 do cronograma e ja esta feita (`api/storage.py`, variavel `STORAGE`);
+os testes continuam em memoria.
 
 ## Proximos passos que dependem disso
 

@@ -153,10 +153,8 @@ def test_delete_so_de_lote_livre(com_doador):
 def test_lote_vencido_depois_de_gravado_ainda_e_lido(com_doador):
     # a checagem de validade e so na entrada
     com_doador.post("/lotes", json=lote())
-    from api.routers import lotes
+    from api.storage import get_storage
 
-    lotes._lotes[1] = lotes._lotes[1].model_copy(
-        update={"validade": date.today() - timedelta(days=3)}
-    )
+    get_storage().atualizar("lotes", 1, {"validade": str(date.today() - timedelta(days=3))})
     assert com_doador.get("/lotes/1").status_code == 200
     assert len(com_doador.get("/lotes").json()) == 1

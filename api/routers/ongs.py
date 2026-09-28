@@ -1,53 +1,47 @@
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, HTTPException
 
 from api.models import Ong, OngCreate, OngUpdate
+from api.storage import get_storage
 
 router = APIRouter(prefix="/ongs", tags=["ongs"])
 
-# em memoria, mesma ideia do doadores.py
-_ongs: dict[int, Ong] = {}
-_proximo_id = 1
+
+def _pega_ong(ong_id: int) -> Ong:
+    linha = get_storage().buscar("ongs", ong_id)
+    if linha is None:
+        raise HTTPException(status_code=404, detail="ONG nao encontrada")
+    return Ong(**linha)
 
 
 @router.post("", response_model=Ong, status_code=201)
 def criar_ong(dados: OngCreate) -> Ong:
-    global _proximo_id
-    if any(o.cnpj == dados.cnpj for o in _ongs.values()):
+    db = get_storage()
+    if db.existe("ongs", cnpj=dados.cnpj):
         raise HTTPException(status_code=409, detail="Ja existe ONG com esse CNPJ")
-    ong = Ong(id=_proximo_id, criado_em=datetime.now(timezone.utc), **dados.model_dump())
-    _ongs[ong.id] = ong
-    _proximo_id += 1
-    return ong
+    return Ong(**db.criar("ongs", dados.model_dump(mode="json")))
 
 
 @router.get("", response_model=list[Ong])
 def listar_ongs() -> list[Ong]:
-    return list(_ongs.values())
+    return [Ong(**l) for l in get_storage().listar("ongs")]
 
 
 @router.get("/{ong_id}", response_model=Ong)
 def buscar_ong(ong_id: int) -> Ong:
-    ong = _ongs.get(ong_id)
-    if ong is None:
-        raise HTTPException(status_code=404, detail="ONG nao encontrada")
-    return ong
+    return _pega_ong(ong_id)
 
 
 @router.put("/{ong_id}", response_model=Ong)
 def atualizar_ong(ong_id: int, dados: OngUpdate) -> Ong:
-    ong = _ongs.get(ong_id)
-    if ong is None:
-        raise HTTPException(status_code=404, detail="ONG nao encontrada")
-    atualizada = ong.model_copy(update=dados.model_dump(exclude_unset=True))
-    _ongs[ong_id] = atualizada
-    return atualizada
+    atual = _pega_ong(ong_id)
+    mudancas = dados.model_dump(exclude_unset=True, mode="json")
+    if not mudancas:
+        return atual
+    return Ong(**get_storage().atualizar("ongs", ong_id, mudancas))
 
 
 @router.delete("/{ong_id}", status_code=204)
 def remover_ong(ong_id: int) -> None:
-    if ong_id not in _ongs:
-        raise HTTPException(status_code=404, detail="ONG nao encontrada")
+    _pega_ong(ong_id)
     # TODO dia 12: barrar (409) quando a ONG ja tiver doacao registrada
-    del _ongs[ong_id]
+    get_storage().apagar("ongs", ong_id)

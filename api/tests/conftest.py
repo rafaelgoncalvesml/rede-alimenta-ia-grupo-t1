@@ -1,14 +1,16 @@
-import pytest
-from fastapi.testclient import TestClient
+import os
 
-from api.main import app
-from api.routers import doadores, lotes, ongs
+# tem que vir antes de importar a app: os testes nunca falam com o banco em nuvem
+os.environ["STORAGE"] = "memory"
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from api.main import app  # noqa: E402
+from api.storage import get_storage  # noqa: E402
 
 
 @pytest.fixture
 def client():
-    # storage em memoria e global: limpa os dicts e volta os contadores de id
-    for mod, store in ((doadores, "_doadores"), (ongs, "_ongs"), (lotes, "_lotes")):
-        getattr(mod, store).clear()
-        mod._proximo_id = 1
+    get_storage().reset()
     return TestClient(app)
