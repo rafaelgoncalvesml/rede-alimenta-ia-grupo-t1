@@ -14,6 +14,8 @@ _proximo_id = 1
 @router.post("", response_model=Ong, status_code=201)
 def criar_ong(dados: OngCreate) -> Ong:
     global _proximo_id
+    if any(o.cnpj == dados.cnpj for o in _ongs.values()):
+        raise HTTPException(status_code=409, detail="Ja existe ONG com esse CNPJ")
     ong = Ong(id=_proximo_id, criado_em=datetime.now(timezone.utc), **dados.model_dump())
     _ongs[ong.id] = ong
     _proximo_id += 1
@@ -47,4 +49,5 @@ def atualizar_ong(ong_id: int, dados: OngUpdate) -> Ong:
 def remover_ong(ong_id: int) -> None:
     if ong_id not in _ongs:
         raise HTTPException(status_code=404, detail="ONG nao encontrada")
+    # TODO dia 12: barrar (409) quando a ONG ja tiver doacao registrada
     del _ongs[ong_id]

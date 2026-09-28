@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 DOADOR = {
     "nome": "Mercado Sol",
     "tipo_pessoa": "juridica",
@@ -9,7 +11,7 @@ LOTE = {
     "doador_id": 1,
     "descricao": "tomate",
     "quantidade_kg": 20,
-    "validade": "2026-10-05",
+    "validade": str(date.today() + timedelta(days=7)),
     "armazenamento": "refrigerado",
 }
 
