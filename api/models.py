@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TipoPessoa(str, Enum):
@@ -87,8 +87,8 @@ class StatusLote(str, Enum):
 
 class LoteBase(BaseModel):
     doador_id: int
-    descricao: str
-    quantidade_kg: float
+    descricao: str = Field(min_length=1)
+    quantidade_kg: float = Field(gt=0)  # mesmo check do schema.sql
     validade: date
     armazenamento: Armazenamento
     tipo: str | None = None  # a IA preenche no POST /lotes (dia 15+), por enquanto manual
@@ -99,8 +99,8 @@ class LoteCreate(LoteBase):
 
 
 class LoteUpdate(BaseModel):
-    descricao: str | None = None
-    quantidade_kg: float | None = None
+    descricao: str | None = Field(default=None, min_length=1)
+    quantidade_kg: float | None = Field(default=None, gt=0)
     validade: date | None = None
     armazenamento: Armazenamento | None = None
     tipo: str | None = None
