@@ -15,6 +15,8 @@ _proximo_id = 1
 @router.post("", response_model=Doador, status_code=201)
 def criar_doador(dados: DoadorCreate) -> Doador:
     global _proximo_id
+    if any(d.documento == dados.documento for d in _doadores.values()):
+        raise HTTPException(status_code=409, detail="Ja existe doador com esse documento")
     doador = Doador(id=_proximo_id, criado_em=datetime.now(timezone.utc), **dados.model_dump())
     _doadores[doador.id] = doador
     _proximo_id += 1
@@ -48,4 +50,9 @@ def atualizar_doador(doador_id: int, dados: DoadorUpdate) -> Doador:
 def remover_doador(doador_id: int) -> None:
     if doador_id not in _doadores:
         raise HTTPException(status_code=404, detail="Doador nao encontrado")
+    # import aqui dentro porque lotes.py ja importa este modulo
+    from api.routers import lotes
+
+    if any(l.doador_id == doador_id for l in lotes._lotes.values()):
+        raise HTTPException(status_code=409, detail="Doador tem lotes cadastrados")
     del _doadores[doador_id]
