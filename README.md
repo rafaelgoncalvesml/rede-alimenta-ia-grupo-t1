@@ -99,6 +99,14 @@ Lote:
 - So apaga lote `disponivel` ou `descartado`; `reservado` e `doado` voltam 409.
 - `doador_id` nao muda; `prioridade` so o modelo escreve.
 
+Prioridade (dia 11): o `POST /lotes` chama `predict()` de `ml/predict.py` e grava
+o resultado em `prioridade`. Contrato (`api/ia.py`): `predict(lote: dict) -> dict`
+com a chave `prioridade` (`alta`, `media` ou `baixa`); o lote entra com
+`descricao`, `quantidade_kg`, `validade` (ISO), `armazenamento` e `tipo`. Se o
+`ml/predict.py` ainda nao existe, se o modelo levanta erro ou devolve valor fora
+das tres opcoes, o lote e cadastrado com `prioridade` nula e o motivo vai pro log.
+O `PUT` nao recalcula a prioridade.
+
 ## Status
 
 Semana 1 de producao. Ver `docs/checkpoint-semana1.md`.
