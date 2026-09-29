@@ -59,7 +59,9 @@ alta se score >= 0.60, media se >= 0.38, baixa no resto
 
 Os pesos sao premissa do grupo, nao vem de estudo. O ruido existe pra que nenhuma
 regra simples acerte tudo: so olhando os dias ate a validade, a melhor regra de
-corte (alta ate 0 dias, media ate 5) acerta cerca de 58%. Esse e o piso que o modelo precisa superar.
+corte (alta ate 0 dias, media ate 5) acerta cerca de 58% no v0 inteiro. Esse numero estava inflado
+pelos lotes vencidos (a regra acerta 75% neles) que a limpeza remove: no v1 o piso e ~56%
+(ver `docs/ia.md`).
 
 ## Ruido injetado de proposito
 
@@ -82,6 +84,14 @@ python data/gerar_dataset_v0.py
 ```
 
 So usa a biblioteca padrao. A seed e fixa, entao o CSV sai identico.
+
+## Dataset v1 (`lotes_v1.csv`)
+
+1083 lotes, gerado do v0 por `python -m ml.limpeza` (duplicados, vencidos, lotes sem armazenamento
+e erros de unidade tratados; coordenadas ausentes preenchidas). Continua **SIMULADO**. Tem as
+colunas do v0 mais `dias_ate_validade`, `fora_do_frio` e `geo_aproximada` (`True` quando a
+latitude e a longitude sao o centro da cidade, nao o endereco). Detalhes e o que cada tratamento
+faz em `docs/ia.md`.
 
 ## Limitacoes (pra defesa)
 
