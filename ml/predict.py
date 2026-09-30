@@ -25,12 +25,15 @@ import functools
 import math
 import re
 from datetime import date, datetime
+from pathlib import Path
 
 import joblib
 import pandas as pd
 
 from ml.features import ARMAZENAMENTOS, CATEGORIAS, PRIORIDADES, adicionar_features, matriz_do_modelo
-from ml.treinar import MODELO
+
+# quem le define o caminho e o treino (ml/treinar.py) importa daqui: a API nao carrega codigo de treino
+MODELO = Path(__file__).resolve().parents[1] / "models" / "prioridade_v1.joblib"
 
 DATA_ISO = re.compile(r"\d{4}-\d{2}-\d{2}")
 

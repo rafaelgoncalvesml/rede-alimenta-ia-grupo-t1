@@ -25,9 +25,9 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from ml.baseline import BaselineDias
 from ml.features import COLUNAS_CATEGORICAS, COLUNAS_NUMERICAS, PRIORIDADES, matriz_do_modelo
 from ml.limpeza import carregar, limpar
+from ml.predict import MODELO
 
 RAIZ = Path(__file__).resolve().parents[1]
-MODELO = RAIZ / "models" / "prioridade_v1.joblib"
 METRICAS = RAIZ / "models" / "metrics.json"
 
 VERSAO = "v1"
