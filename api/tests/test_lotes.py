@@ -72,10 +72,11 @@ def test_update_valida_igual_ao_create(com_doador):
 
 
 def test_update_nao_troca_doador_nem_prioridade(com_doador):
-    com_doador.post("/lotes", json=lote())
-    r = com_doador.put("/lotes/1", json={"doador_id": 5, "prioridade": "alta"})
+    do_modelo = com_doador.post("/lotes", json=lote()).json()["prioridade"]
+    outra = next(p for p in ("alta", "media", "baixa") if p != do_modelo)
+    r = com_doador.put("/lotes/1", json={"doador_id": 5, "prioridade": outra})
     assert r.json()["doador_id"] == 1
-    assert r.json()["prioridade"] is None
+    assert r.json()["prioridade"] == do_modelo
 
 
 def test_filtros_da_listagem(com_doador):

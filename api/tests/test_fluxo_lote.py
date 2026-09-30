@@ -26,7 +26,7 @@ def test_cadastra_lote_e_lista(client):
     assert r.status_code == 201
     lote = r.json()
     assert lote["status"] == "disponivel"
-    assert lote["prioridade"] is None  # so o modelo preenche
+    assert lote["prioridade"] in ("alta", "media", "baixa")  # o modelo preenche no POST
 
     listados = client.get("/lotes").json()
     assert [l["id"] for l in listados] == [lote["id"]]
@@ -38,8 +38,10 @@ def test_lote_sem_doador_da_404(client):
 
 def test_lote_nao_aceita_prioridade_do_cliente(client):
     client.post("/doadores", json=DOADOR)
-    r = client.post("/lotes", json={**LOTE, "prioridade": "alta", "status": "doado"})
-    assert r.json()["prioridade"] is None
+    do_modelo = client.post("/lotes", json=LOTE).json()["prioridade"]
+    outra = next(p for p in ("alta", "media", "baixa") if p != do_modelo)
+    r = client.post("/lotes", json={**LOTE, "prioridade": outra, "status": "doado"})
+    assert r.json()["prioridade"] == do_modelo
     assert r.json()["status"] == "disponivel"
 
 

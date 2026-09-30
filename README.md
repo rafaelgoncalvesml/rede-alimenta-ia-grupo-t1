@@ -22,7 +22,7 @@ Orientacao: Prof. M.Sc Oerton Fernandes.
 
 ## Como rodar a API (local)
 
-Da raiz do repo, com Python 3.10+:
+Da raiz do repo, com Python 3.11+ (o scikit-learn 1.8 do modelo nao instala no 3.10):
 
 ```
 python -m venv .venv
@@ -99,13 +99,16 @@ Lote:
 - So apaga lote `disponivel` ou `descartado`; `reservado` e `doado` voltam 409.
 - `doador_id` nao muda; `prioridade` so o modelo escreve.
 
-Prioridade (dia 11): o `POST /lotes` chama `predict()` de `ml/predict.py` e grava
-o resultado em `prioridade`. Contrato (`api/ia.py`): `predict(lote: dict) -> dict`
-com a chave `prioridade` (`alta`, `media` ou `baixa`); o lote entra com
-`descricao`, `quantidade_kg`, `validade` (ISO), `armazenamento` e `tipo`. Se o
-`ml/predict.py` ainda nao existe, se o modelo levanta erro ou devolve valor fora
-das tres opcoes, o lote e cadastrado com `prioridade` nula e o motivo vai pro log.
-O `PUT` nao recalcula a prioridade.
+Prioridade (dia 11): o `POST /lotes` chama `predict()` de `ml/predict.py` (contrato em
+`docs/ia.md`, secao 5) e grava `prioridade` (`alta`, `media` ou `baixa`) e a categoria
+em `tipo`. Se o doador ja mandou `tipo`, a IA nao reclassifica.
+
+- Entrada que o modelo recusa (`tipo` fora das 6 categorias, `descricao` em branco
+  sem `tipo`) volta 422 com a mensagem do modelo e o lote nao e cadastrado.
+- Falha do modelo (arquivo `models/prioridade_v1.joblib` ausente, versao errada do
+  scikit-learn) ou saida fora de alta/media/baixa: o lote e cadastrado com
+  `prioridade` e `tipo` nulos e o erro vai pro log. O doador nao perde o cadastro.
+- O `PUT` nao recalcula a prioridade.
 
 ## Status
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from api.ia import prioridade_do_lote
+from api.ia import classificar_lote
 from api.models import Lote, LoteCreate, LoteUpdate, StatusLote
 from api.storage import get_storage
 
@@ -28,7 +28,10 @@ def criar_lote(dados: LoteCreate) -> Lote:
     if db.buscar("doadores", dados.doador_id) is None:
         raise HTTPException(status_code=404, detail="Doador nao encontrado")
     novo = dados.model_dump(mode="json")
-    novo["prioridade"] = prioridade_do_lote(novo)
+    try:
+        novo.update(classificar_lote(novo))
+    except ValueError as erro:
+        raise HTTPException(status_code=422, detail=str(erro))
     return Lote(**db.criar("lotes", novo))
 
 

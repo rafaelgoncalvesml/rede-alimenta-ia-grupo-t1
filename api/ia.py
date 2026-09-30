@@ -1,45 +1,30 @@
-"""Ponte entre a API e o modelo do Charles (ml/predict.py).
-
-Contrato esperado: predict(lote: dict) -> dict com a chave "prioridade" (alta,
-media ou baixa). O lote vai com descricao, quantidade_kg, validade (ISO),
-armazenamento e tipo. Enquanto o ml/predict.py nao existir (ou se o modelo
-falhar), o lote e cadastrado sem prioridade em vez de derrubar o POST.
-"""
+"""Ponte entre a API e o modelo do Charles (ml/predict.py). Contrato em docs/ia.md, secao 5."""
 import logging
+
+from ml.predict import predict
 
 log = logging.getLogger(__name__)
 
 PRIORIDADES = {"alta", "media", "baixa"}
 
-_predict = None
-_ja_tentou = False
 
+def classificar_lote(lote: dict) -> dict:
+    """Devolve {"tipo", "prioridade"} pra gravar no lote, ou {} se o modelo nao respondeu.
 
-def _carrega():
-    global _predict, _ja_tentou
-    if not _ja_tentou:
-        _ja_tentou = True
-        try:
-            from ml.predict import predict
-
-            _predict = predict
-        except ImportError as e:
-            log.warning("modelo indisponivel, lotes ficam sem prioridade: %s", e)
-    return _predict
-
-
-def prioridade_do_lote(lote: dict) -> str | None:
-    predict = _carrega()
-    if predict is None:
-        return None
+    ValueError do predict() e entrada que o modelo recusa (tipo fora das 6 categorias,
+    descricao em branco sem tipo...): sobe pra rota responder 422. Qualquer outra falha
+    (joblib sumiu, versao do scikit-learn trocou) e problema nosso, nao do doador, entao
+    o lote entra sem prioridade e o erro fica no log.
+    """
     try:
         saida = predict(lote)
+    except ValueError:
+        raise
     except Exception:
-        # o doador nao pode perder o cadastro por causa do modelo
-        log.exception("predict() falhou")
-        return None
+        log.exception("predict() falhou, lote segue sem prioridade")
+        return {}
     prioridade = saida.get("prioridade") if isinstance(saida, dict) else None
     if prioridade not in PRIORIDADES:
         log.error("predict() devolveu prioridade invalida: %r", prioridade)
-        return None
-    return prioridade
+        return {}
+    return {"tipo": saida.get("categoria"), "prioridade": prioridade}
