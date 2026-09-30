@@ -110,6 +110,23 @@ em `tipo`. Se o doador ja mandou `tipo`, a IA nao reclassifica.
   `prioridade` e `tipo` nulos e o erro vai pro log. O doador nao perde o cadastro.
 - O `PUT` nao recalcula a prioridade.
 
+Doacao (dia 12): `POST /doacoes` confirma o match. Corpo: `lote_id`, `ong_id` e,
+opcionais, `distancia_km` e `score` (o que o `/matching` devolveu; por enquanto
+informativos, o servidor nao recalcula). Status e timestamps sao sempre do servidor.
+
+- Reserva o lote (`disponivel` -> `reservado`) e grava a doacao como `confirmada` no
+  mesmo passo. Lote ou ONG que nao existe volta 404; lote que nao esta `disponivel`
+  (inclusive confirmado por outro pedido ao mesmo tempo) volta 409.
+- `confirmado_em` e `tempo_match_s` (confirmacao menos o `criado_em` do lote) ficam
+  gravados: o tempo medio de match e um `avg(tempo_match_s)`.
+- Nao existe `PUT` nem `DELETE` de doacao. Se a reserva cai (`PUT /lotes/{id}` de
+  `reservado` para `disponivel` ou `descartado`), a doacao vira `cancelada` e o lote
+  pode ser doado a outra ONG. `reservado` -> `doado` (entrega) mantem a confirmada.
+- Lote e ONG com doacao registrada nao podem ser apagados (409). `GET /doacoes`
+  aceita `lote_id`, `ong_id` e `status`.
+- A tabela nova esta em `infra/db/schema.sql`; no Supabase, rode
+  `python infra/db/aplicar_schema.py` (seguro repetir).
+
 ## Status
 
 Semana 1 de producao. Ver `docs/checkpoint-semana1.md`.

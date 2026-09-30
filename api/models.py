@@ -215,3 +215,30 @@ class Lote(LoteBase):
     status: StatusLote = StatusLote.disponivel
     prioridade: str | None = None  # so o modelo escreve, nao entra no Create/Update
     criado_em: datetime
+
+
+class StatusDoacao(str, Enum):
+    confirmada = "confirmada"
+    cancelada = "cancelada"
+
+
+class DoacaoCreate(BaseModel):
+    """O que o cliente manda. Status e timestamps sao do servidor."""
+
+    lote_id: int
+    ong_id: int
+    # vem do POST /matching; ate o servidor recalcular, sao informativos
+    distancia_km: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    score: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+
+
+class Doacao(BaseModel):
+    id: int
+    lote_id: int
+    ong_id: int
+    distancia_km: float | None = None
+    score: float | None = None
+    status: StatusDoacao
+    criado_em: datetime
+    confirmado_em: datetime
+    tempo_match_s: float  # confirmado_em menos o criado_em do lote

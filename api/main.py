@@ -3,13 +3,14 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from psycopg_pool import PoolTimeout
 
-from api.routers import doadores, lotes, ongs
+from api.routers import doacoes, doadores, lotes, ongs
 from api.storage import PostgresStorage, get_storage
 
 app = FastAPI(title="Rede Alimenta IA", docs_url="/docs")
 app.include_router(doadores.router)
 app.include_router(ongs.router)
 app.include_router(lotes.router)
+app.include_router(doacoes.router)
 
 
 @app.exception_handler(psycopg.errors.UniqueViolation)
