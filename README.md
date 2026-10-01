@@ -127,6 +127,28 @@ informativos, o servidor nao recalcula). Status e timestamps sao sempre do servi
 - A tabela nova esta em `infra/db/schema.sql`; no Supabase, rode
   `python infra/db/aplicar_schema.py` (seguro repetir).
 
+Erros e auditoria (dia 13): todo erro volta como JSON `{"detail": ...}`.
+
+| Codigo | Quando |
+|---|---|
+| 400 | corpo do pedido que nao e JSON |
+| 404 | rota ou registro que nao existe (405 se o metodo nao existe na rota) |
+| 409 | conflito: documento repetido, status que nao pode andar, lote que nao esta disponivel |
+| 422 | JSON valido com campo errado. `detail` e uma lista de `{type, loc, msg}`, sem o valor recebido |
+| 500 | erro nosso. Corpo generico `{"detail": "Erro interno do servidor", "request_id": ...}`; o stack trace fica so no log |
+| 503 | banco fora do ar (mesmo `request_id`) |
+
+Toda resposta traz o header `X-Request-ID`. Com ele se acha a linha no log.
+`quantidade_kg` e `capacidade_kg` nao aceitam NaN nem infinito; `descricao` vai ate 500
+caracteres e `tipo` ate 50.
+
+O log de auditoria sai no stdout, uma linha JSON por pedido (`tipo: requisicao`: metodo,
+path, status, ms, ip) e uma por mudanca de dado (`tipo: evento`: `lote.criado`,
+`lote.atualizado` com `status_de`/`status_para`, `doacao.confirmada`, `doacao.cancelada`,
+`doador.criado`...). Nao grava corpo nem querystring, entao CPF, CNPJ, e-mail e telefone
+nao aparecem. Sem login ainda, "quem" e so o IP (atras do proxy do Render e o do proxy).
+Codigo em `api/erros.py` e `api/auditoria.py`.
+
 ## Status
 
 Semana 1 de producao. Ver `docs/checkpoint-semana1.md`.

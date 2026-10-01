@@ -1,8 +1,6 @@
-import psycopg
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from psycopg_pool import PoolTimeout
 
+from api import auditoria, erros
 from api.routers import doacoes, doadores, lotes, ongs
 from api.storage import PostgresStorage, get_storage
 
@@ -11,19 +9,8 @@ app.include_router(doadores.router)
 app.include_router(ongs.router)
 app.include_router(lotes.router)
 app.include_router(doacoes.router)
-
-
-@app.exception_handler(psycopg.errors.UniqueViolation)
-@app.exception_handler(psycopg.errors.ForeignKeyViolation)
-async def _conflito_no_banco(request, exc):
-    # o pre-check dos routers pega o caso comum; isto cobre corrida entre dois pedidos
-    return JSONResponse(status_code=409, content={"detail": "Conflito com dados ja existentes"})
-
-
-@app.exception_handler(psycopg.OperationalError)
-@app.exception_handler(PoolTimeout)
-async def _banco_fora(request, exc):
-    return JSONResponse(status_code=503, content={"detail": "Banco de dados indisponivel"})
+erros.instala(app)
+auditoria.instala(app)
 
 
 @app.get("/health", tags=["infra"])

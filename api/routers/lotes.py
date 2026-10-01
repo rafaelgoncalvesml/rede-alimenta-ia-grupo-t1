@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from api import auditoria
 from api.ia import classificar_lote
 from api.models import Lote, LoteCreate, LoteUpdate, StatusLote
 from api.storage import get_storage
@@ -32,7 +33,10 @@ def criar_lote(dados: LoteCreate) -> Lote:
         novo.update(classificar_lote(novo))
     except ValueError as erro:
         raise HTTPException(status_code=422, detail=str(erro))
-    return Lote(**db.criar("lotes", novo))
+    criado = db.criar("lotes", novo)
+    auditoria.registrar("lote.criado", lote_id=criado["id"], doador_id=dados.doador_id,
+                        prioridade=criado.get("prioridade"))
+    return Lote(**criado)
 
 
 @router.get("", response_model=list[Lote])
@@ -74,7 +78,11 @@ def atualizar_lote(lote_id: int, dados: LoteUpdate) -> Lote:
         # um PUT que falhe no meio poder ser repetido sem deixar o lote preso
         for d in db.listar("doacoes", lote_id=lote_id, status="confirmada"):
             db.atualizar("doacoes", d["id"], {"status": "cancelada"})
-    return Lote(**db.atualizar("lotes", lote_id, mudancas))
+            auditoria.registrar("doacao.cancelada", doacao_id=d["id"], lote_id=lote_id)
+    atualizado = db.atualizar("lotes", lote_id, mudancas)
+    auditoria.registrar("lote.atualizado", lote_id=lote_id, campos=sorted(mudancas),
+                        status_de=lote.status.value, status_para=atualizado["status"])
+    return Lote(**atualizado)
 
 
 @router.delete("/{lote_id}", status_code=204)
@@ -86,3 +94,4 @@ def remover_lote(lote_id: int) -> None:
     if db.existe("doacoes", lote_id=lote_id):
         raise HTTPException(status_code=409, detail="Lote tem doacao registrada")
     db.apagar("lotes", lote_id)
+    auditoria.registrar("lote.apagado", lote_id=lote_id)
