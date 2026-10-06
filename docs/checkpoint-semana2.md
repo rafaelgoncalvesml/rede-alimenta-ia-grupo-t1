@@ -66,6 +66,25 @@ Sem configuracao, o conjunto padrao do 0.16 acusa 44 itens, quase todos estilo. 
 reformataria 30 dos 47 arquivos, entao fica pra decisao do grupo. Os 15 `date.today()` sem fuso
 (DTZ011) ficam como pendencia pra olhar antes do deploy.
 
+## pip-audit (rodado hoje, pip-audit 2.10.1)
+
+Rodei um arquivo de requisitos por vez, contra a base do PyPI/OSV, resolvendo a arvore inteira.
+
+| Arquivo | Antes | Depois |
+|---|---|---|
+| `api/requirements.txt` | 7 CVEs no `starlette 0.38.6` (vem preso ao `fastapi 0.115.0`) | 0, com `fastapi==0.142.2` (traz `starlette 1.7.0`) |
+| `ml/requirements.txt` | 0 | 0 |
+| `infra/db/requirements.txt` | 4 CVEs no `pymongo 4.8.0`, 1 no `python-dotenv 1.0.1` | 0, com `pymongo==4.18.2` e `python-dotenv==1.2.3` |
+
+Os 7 do starlette sao de formulario, upload, `StaticFiles` e leitura do `Host`. A API nao usa
+formulario, upload, arquivo estatico nem `HTTPEndpoint`, entao quase nada era alcancavel hoje;
+o `request.url.path` do log de auditoria e o unico ponto que encosta. Atualizei mesmo assim
+porque a Semana 3 traz auth e a imagem do container, e porque custou pouco: 181 testes passando
+antes e depois, e a API sobe de verdade no `uvicorn` (health, `/docs`, 400 e 404 conferidos).
+O `pymongo` e o `python-dotenv` do `infra/db` so valem pro script `test_connections.py`; **nao
+testei a conexao com o Atlas**, so a auditoria. O `scikit-learn` continua em 1.8.0 de
+proposito (o artefato do modelo so carrega nessa versao).
+
 ## O que a demo mostra e o que nao mostra
 
 Mostra: lote, prioridade vinda do modelo e doacao, de ponta a ponta, com erros tratados.
@@ -113,7 +132,8 @@ e o teste contra Postgres de verdade.
 
 ## Nao conferido
 
-- `pip-audit` e `gitleaks` nao estao instalados aqui, entao nenhum rodou.
+- O `gitleaks` nao esta instalado aqui. A busca de segredos foi so por `git grep`.
+- O pip-audit olha so as dependencias declaradas; imagem de container fica pro Trivy (Semana 3).
 - O fluxo da demo rodou em memoria; no Supabase so conferi saude e listagem, nao gravei
   nada de novo.
 - Nao consegui ver se Anthony e Gustavo tem trabalho em branch fora do GitHub.
