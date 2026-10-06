@@ -1,4 +1,4 @@
-# Autenticacao e papeis (dia 15)
+# Autenticacao e papeis (dias 15 e 16)
 
 ## O que foi decidido
 
@@ -30,6 +30,21 @@
 
 "Recebeu" quer dizer doacao `confirmada` pra aquela ONG. Se a reserva cai e a doacao vira
 `cancelada`, o lote some da lista da ONG.
+
+## Como o teste do dia 16 funciona
+
+`api/tests/test_acesso_negado.py` monta um mundo com 2 doadores, 3 ONGs, 3 lotes e uma doacao
+e roda 20 rotas contra 6 atores (sem login, dono, outro doador, ONG que recebeu, outra ONG e
+admin): 120 casos. Alem da matriz:
+
+- uma checagem que **falha se aparecer rota nova sem linha na matriz**;
+- outra que bate em toda rota protegida sem token e exige 401;
+- testes do que cada papel enxerga nas listas, de tentativas de driblar (criar lote em nome de
+  outro, doar lote alheio, trocar `papel` no corpo) e de que o pedido negado nao altera dado.
+
+Conferi que o teste pega regressao: tirei a checagem de dono do `GET /lotes/{id}`, deixei
+`exige()` aceitar qualquer papel e deixei o doador doar lote de outro; falharam 5, 29 e 2
+testes, e voltaram a passar ao restaurar.
 
 ## Limites que ficam de fora (de proposito ou por falta de tempo)
 
