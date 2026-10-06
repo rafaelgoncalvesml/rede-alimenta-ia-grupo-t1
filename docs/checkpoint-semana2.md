@@ -52,6 +52,20 @@ Escopo: `api`, `ml`, `infra` e `data`, sem os testes. Nos testes o Bandit acusa 
 Sobrou 0 alta e 0 media, entao o item do checklist fecha. O Bandit nao olha dependencia nem
 imagem: `pip-audit` e Trivy ficam pra Semana 3.
 
+## Ruff (rodado hoje, ruff 0.16.10)
+
+Sem configuracao, o conjunto padrao do 0.16 acusa 44 itens, quase todos estilo. Fixei no
+`ruff.toml` o conjunto `E4, E7, E9, F, B, I` com linha de 100 colunas (`E741` fora: o `l` de
+"lote" em comprehension nao esconde bug). Achados reais, todos corrigidos:
+
+- `api/routers/lotes.py`: `raise ... from None` dentro do `except` (B904). Mesmo 422.
+- `ml/predict.py`: `zip(..., strict=True)` entre as classes do modelo e as probabilidades
+  (B905), e imports reordenados.
+
+`ruff check` passa limpo e os 181 testes seguem verdes. **Nao apliquei `ruff format`**: ele
+reformataria 30 dos 47 arquivos, entao fica pra decisao do grupo. Os 15 `date.today()` sem fuso
+(DTZ011) ficam como pendencia pra olhar antes do deploy.
+
 ## O que a demo mostra e o que nao mostra
 
 Mostra: lote, prioridade vinda do modelo e doacao, de ponta a ponta, com erros tratados.
@@ -99,7 +113,7 @@ e o teste contra Postgres de verdade.
 
 ## Nao conferido
 
-- Ruff, `pip-audit` e `gitleaks` nao estao instalados aqui, entao nenhum rodou.
+- `pip-audit` e `gitleaks` nao estao instalados aqui, entao nenhum rodou.
 - O fluxo da demo rodou em memoria; no Supabase so conferi saude e listagem, nao gravei
   nada de novo.
 - Nao consegui ver se Anthony e Gustavo tem trabalho em branch fora do GitHub.

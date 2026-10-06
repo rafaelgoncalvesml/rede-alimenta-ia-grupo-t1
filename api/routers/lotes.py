@@ -32,7 +32,7 @@ def criar_lote(dados: LoteCreate) -> Lote:
     try:
         novo.update(classificar_lote(novo))
     except ValueError as erro:
-        raise HTTPException(status_code=422, detail=str(erro))
+        raise HTTPException(status_code=422, detail=str(erro)) from None
     criado = db.criar("lotes", novo)
     auditoria.registrar("lote.criado", lote_id=criado["id"], doador_id=dados.doador_id,
                         prioridade=criado.get("prioridade"))

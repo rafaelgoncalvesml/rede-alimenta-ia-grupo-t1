@@ -30,7 +30,13 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from ml.features import ARMAZENAMENTOS, CATEGORIAS, PRIORIDADES, adicionar_features, matriz_do_modelo
+from ml.features import (
+    ARMAZENAMENTOS,
+    CATEGORIAS,
+    PRIORIDADES,
+    adicionar_features,
+    matriz_do_modelo,
+)
 
 # quem le define o caminho e o treino (ml/treinar.py) importa daqui: a API nao carrega codigo de treino
 MODELO = Path(__file__).resolve().parents[1] / "models" / "prioridade_v1.joblib"
@@ -95,7 +101,9 @@ def predict(lote: dict, hoje: date | None = None, modelo: dict | None = None) ->
         "categoria": categoria, "armazenamento": armazenamento, "quantidade_kg": quantidade,
     }]))
     pipeline = modelo["prioridade"]
-    proba = dict(zip(pipeline.classes_, pipeline.predict_proba(matriz_do_modelo(features))[0]))
+    proba = dict(
+        zip(pipeline.classes_, pipeline.predict_proba(matriz_do_modelo(features))[0], strict=True)
+    )
     probabilidades = {p: float(proba[p]) for p in PRIORIDADES}
 
     return {
