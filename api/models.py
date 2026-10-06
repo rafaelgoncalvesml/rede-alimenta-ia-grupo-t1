@@ -242,3 +242,53 @@ class Doacao(BaseModel):
     criado_em: datetime
     confirmado_em: datetime
     tempo_match_s: float  # confirmado_em menos o criado_em do lote
+
+
+class Papel(str, Enum):
+    admin = "admin"
+    doador = "doador"
+    ong = "ong"
+
+
+class UsuarioCreate(BaseModel):
+    email: str = Field(pattern=EMAIL_RE, max_length=200)
+    senha: str = Field(min_length=10, max_length=128)
+    papel: Papel
+    doador_id: int | None = None
+    ong_id: int | None = None
+
+    @field_validator("email")
+    @classmethod
+    def _email_minusculo(cls, v: str) -> str:
+        return v.strip().lower()
+
+    @model_validator(mode="after")
+    def _entidade_bate_com_o_papel(self):
+        # doador e ONG precisam apontar pra entidade deles; admin nao aponta pra nenhuma
+        esperado = {Papel.doador: "doador_id", Papel.ong: "ong_id"}.get(self.papel)
+        for campo in ("doador_id", "ong_id"):
+            tem = getattr(self, campo) is not None
+            if tem != (campo == esperado):
+                raise ValueError(f"papel {self.papel.value} " + (
+                    f"exige {esperado}" if campo == esperado else f"nao aceita {campo}"))
+        return self
+
+
+class Usuario(BaseModel):
+    id: int
+    email: str
+    papel: Papel
+    doador_id: int | None = None
+    ong_id: int | None = None
+    criado_em: datetime
+
+
+class LoginIn(BaseModel):
+    email: str = Field(max_length=200)
+    senha: str = Field(max_length=128)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int  # segundos

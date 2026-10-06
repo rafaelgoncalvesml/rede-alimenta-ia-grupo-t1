@@ -33,6 +33,12 @@ uvicorn api.main:app --reload
 
 Swagger em http://localhost:8000/docs e health check em `/health`.
 
+A API **nao sobe sem `JWT_SECRET`** (minimo 32 caracteres). Pro uso local, copie
+`.env.example` pra `.env`, gere o segredo com
+`python -c "import secrets; print(secrets.token_urlsafe(48))"` e preencha tambem
+`ADMIN_EMAIL` e `ADMIN_PASSWORD` (10+ caracteres): o admin e criado na primeira
+subida. Veja a secao "Autenticacao" abaixo.
+
 ### Onde os dados ficam
 
 A variavel `STORAGE` escolhe:
@@ -126,6 +132,25 @@ informativos, o servidor nao recalcula). Status e timestamps sao sempre do servi
   aceita `lote_id`, `ong_id` e `status`.
 - A tabela nova esta em `infra/db/schema.sql`; no Supabase, rode
   `python infra/db/aplicar_schema.py` (seguro repetir).
+
+## Autenticacao e papeis (dia 15)
+
+Todo endpoint, menos `/health`, `/docs` e `POST /auth/login`, pede token. Detalhes e
+decisoes em `docs/auth.md`.
+
+1. `POST /auth/login` com `{"email": ..., "senha": ...}` devolve `access_token` (JWT, vale
+   30 min). Erro de login volta 401 sempre com a mesma mensagem; 5 erros no mesmo e-mail em
+   15 min voltam 429 com `Retry-After`.
+2. Nas demais chamadas: `Authorization: Bearer <token>`. No Swagger, botao "Authorize".
+3. Quem cria usuario e o admin (`POST /usuarios`); nao existe cadastro aberto.
+
+| Papel | Pode |
+|---|---|
+| `admin` | tudo |
+| `doador` | ler e editar o proprio cadastro; criar, ver, editar e apagar os proprios lotes; confirmar doacao dos proprios lotes; listar as ONGs |
+| `ong` | listar as ONGs e editar a propria; ver os lotes e doacoes que recebeu |
+
+Sem token valido volta 401; papel ou dono errado volta 403.
 
 Erros e auditoria (dia 13): todo erro volta como JSON `{"detail": ...}`.
 

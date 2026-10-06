@@ -9,17 +9,25 @@ linha fica marcada pra entrar quando o POST /matching chegar.
 import os
 
 os.environ["STORAGE"] = "memory"
+# so pra demo local: segredo e admin descartaveis, a API em memoria some quando o script acaba
+os.environ.setdefault("JWT_SECRET", "demo-" + "x" * 40)
+os.environ.setdefault("ADMIN_EMAIL", "admin@demo.local")
+os.environ.setdefault("ADMIN_PASSWORD", "senha-da-demo-1")
 
 import logging  # noqa: E402
 from datetime import date, timedelta  # noqa: E402
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from api import seguranca  # noqa: E402
 from api.main import app  # noqa: E402
 from api.storage import get_storage  # noqa: E402
 
 get_storage().reset()
+seguranca.garantir_admin()
 c = TestClient(app)
+c.headers["Authorization"] = "Bearer " + c.post("/auth/login", json={
+    "email": os.environ["ADMIN_EMAIL"], "senha": os.environ["ADMIN_PASSWORD"]}).json()["access_token"]
 logging.getLogger("auditoria").setLevel(logging.CRITICAL)  # a demo ja imprime cada passo
 hoje = date.today()
 

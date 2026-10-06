@@ -19,6 +19,7 @@ COLUNAS = {
               "armazenamento", "status", "prioridade"],
     "doacoes": ["lote_id", "ong_id", "distancia_km", "score", "status", "confirmado_em",
                 "tempo_match_s"],
+    "usuarios": ["email", "senha_hash", "papel", "doador_id", "ong_id"],
 }
 # o que o banco preenche sozinho quando a coluna nao vem no insert
 PADROES = {"lotes": {"status": "disponivel", "prioridade": None, "tipo": None}}

@@ -63,6 +63,23 @@ create table if not exists doacoes (
 create unique index if not exists doacoes_uma_confirmada_por_lote
     on doacoes (lote_id) where status = 'confirmada';
 
+-- Quem entra na API. Senha so como hash (argon2). doador e ong apontam pra entidade que o
+-- usuario representa; o check garante que cada papel tem a ligacao certa.
+create table if not exists usuarios (
+    id bigint generated always as identity primary key,
+    email text not null unique check (email = lower(email)),
+    senha_hash text not null,
+    papel text not null check (papel in ('admin', 'doador', 'ong')),
+    doador_id bigint references doadores (id),
+    ong_id bigint references ongs (id),
+    criado_em timestamptz not null default now(),
+    check (
+        (papel = 'admin' and doador_id is null and ong_id is null)
+        or (papel = 'doador' and doador_id is not null and ong_id is null)
+        or (papel = 'ong' and ong_id is not null and doador_id is null)
+    )
+);
+
 -- O Supabase expoe tabelas do schema public numa API REST propria (PostgREST).
 -- Com RLS ligado e sem policy, essa API nao le nem escreve nada. A nossa API
 -- conecta como o dono das tabelas (postgres), que ignora o RLS.
@@ -70,3 +87,4 @@ alter table doadores enable row level security;
 alter table ongs enable row level security;
 alter table lotes enable row level security;
 alter table doacoes enable row level security;
+alter table usuarios enable row level security;
