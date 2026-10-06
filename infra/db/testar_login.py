@@ -3,21 +3,35 @@
     python -m infra.db.testar_login      (da raiz do repo; precisa de SUPABASE_DB_URL no .env)
 
 Usa segredo e senhas descartaveis geradas na hora, cria doadores, ONG, usuarios e um lote
-marcados TESTE-AUTH / @exemplo.invalid, roda ~26 verificacoes e apaga tudo no final (confere a
+marcados TESTE-AUTH / @exemplo.invalid, roda ~30 verificacoes e apaga tudo no final (confere a
 contagem de linhas antes e depois). Exige que a tabela usuarios ja exista:
 python infra/db/aplicar_schema.py.
+
+Com API_URL, em vez de chamar a API dentro do processo ele fala HTTP com uma API que ja esta
+rodando (o container, por exemplo). Ai a API foi subida com o MESMO ADMIN_EMAIL e
+ADMIN_PASSWORD que este script le do ambiente, e o e-mail tem que terminar em @exemplo.invalid
+(o script apaga esse admin no fim e nao pode apagar um de verdade).
+
+    API_URL=http://localhost:8000 python -m infra.db.testar_login
 """
 import logging
 import os
 import secrets
 import sys
 
+API_URL = os.getenv("API_URL", "").rstrip("/")
 os.environ["STORAGE"] = "postgres"
-os.environ["JWT_SECRET"] = secrets.token_urlsafe(48)
-SENHA_ADMIN = secrets.token_urlsafe(14)
 SENHA_USER = secrets.token_urlsafe(14)
-os.environ["ADMIN_EMAIL"] = "teste-login-admin@exemplo.invalid"
-os.environ["ADMIN_PASSWORD"] = SENHA_ADMIN
+if API_URL:
+    if not os.getenv("ADMIN_EMAIL", "").endswith("@exemplo.invalid") or not os.getenv("ADMIN_PASSWORD"):
+        sys.exit("com API_URL, defina ADMIN_EMAIL (terminando em @exemplo.invalid) e ADMIN_PASSWORD "
+                 "iguais aos da API")
+    SENHA_ADMIN = os.environ["ADMIN_PASSWORD"]
+else:
+    os.environ["JWT_SECRET"] = secrets.token_urlsafe(48)
+    SENHA_ADMIN = secrets.token_urlsafe(14)
+    os.environ["ADMIN_EMAIL"] = "teste-login-admin@exemplo.invalid"
+    os.environ["ADMIN_PASSWORD"] = SENHA_ADMIN
 from datetime import date, timedelta  # noqa: E402
 
 from fastapi.testclient import TestClient  # noqa: E402
@@ -28,8 +42,19 @@ from api.storage import get_storage  # noqa: E402
 
 logging.getLogger("auditoria").setLevel(logging.CRITICAL)
 
+
+def novo_cliente():
+    if API_URL:
+        import httpx
+
+        return httpx.Client(base_url=API_URL, timeout=60)
+    return TestClient(app)
+
+
 db = get_storage()
 antes = {t: len(db.listar(t)) for t in ("doadores", "ongs", "lotes", "doacoes", "usuarios")}
+if API_URL:  # a API ja criou o admin de teste ao subir; ele nao conta como "antes"
+    antes["usuarios"] -= len(db.listar("usuarios", email=os.environ["ADMIN_EMAIL"]))
 print("antes :", antes)
 ok = True
 def checa(rotulo, got, esperado):
@@ -40,17 +65,18 @@ def checa(rotulo, got, esperado):
 
 criados = {"lotes": [], "usuarios": [], "doadores": [], "ongs": []}
 try:
-    seguranca.garantir_admin()
+    if not API_URL:
+        seguranca.garantir_admin()
     admin_row = db.listar("usuarios", email=os.environ["ADMIN_EMAIL"])
     checa("admin criado no Postgres", len(admin_row), 1)
     criados["usuarios"].append(admin_row[0]["id"])
     checa("senha guardada como argon2", admin_row[0]["senha_hash"].startswith("$argon2"), True)
 
-    anon = TestClient(app)
+    anon = novo_cliente()
     checa("GET /lotes sem token", anon.get("/lotes").status_code, 401)
     r = anon.post("/auth/login", json={"email": os.environ["ADMIN_EMAIL"], "senha": SENHA_ADMIN})
     checa("login admin", r.status_code, 200)
-    adm = TestClient(app)
+    adm = novo_cliente()
     adm.headers["Authorization"] = "Bearer " + r.json()["access_token"]
     checa("GET /auth/eu (admin)", adm.get("/auth/eu").json()["papel"], "admin")
     checa("GET /lotes admin", adm.get("/lotes").status_code, 200)
@@ -76,7 +102,7 @@ try:
     checa("apagar doador com usuario", adm.delete(f"/doadores/{id1}").status_code, 409)
 
     def entra(email):
-        c = TestClient(app)
+        c = novo_cliente()
         r = c.post("/auth/login", json={"email": email, "senha": SENHA_USER})
         c.headers["Authorization"] = "Bearer " + r.json()["access_token"]
         return c, r.status_code
@@ -90,6 +116,7 @@ try:
     lote = {"doador_id": id1, "descricao": "tomate", "quantidade_kg": 5, "validade": str(date.today() + timedelta(days=5)), "armazenamento": "refrigerado"}
     r = c1.post("/lotes", json=lote)
     checa("doador 1 cria lote proprio", r.status_code, 201)
+    checa("modelo respondeu (prioridade preenchida)", r.json().get("prioridade") in ("alta", "media", "baixa"), True)
     lid = r.json()["id"]
     criados["lotes"].append(lid)
     checa("doador 2 cria lote em nome do 1", c2.post("/lotes", json=lote).status_code, 403)

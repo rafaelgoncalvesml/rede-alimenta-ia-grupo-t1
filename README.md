@@ -58,6 +58,13 @@ Com a API de pe, `python -m api.seed_dev` cadastra um doador e uma ONG de exempl
 
 Testes: `pytest api` (sempre em memoria, nunca tocam o banco).
 
+### Em container
+
+`api/Dockerfile` (Python 3.12, usuario sem root) e `.dockerignore` na raiz. Da raiz do repo:
+`docker build -t rede-alimenta-api -f api/Dockerfile .` e depois `docker run` com as variaveis
+de ambiente (passo a passo, medidas e o que nao foi testado em `docs/container.md`). Sem
+`STORAGE=postgres` a API sobe em memoria.
+
 ## Contrato pro Streamlit
 
 O frontend le a URL da API da variavel `API_URL` (padrao `http://localhost:8000`).
