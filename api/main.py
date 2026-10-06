@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
-from api import auditoria, erros, seguranca
+from api import auditoria, erros, limites, seguranca
 from api.routers import auth, doacoes, doadores, kpis, lotes, ongs, usuarios
 from api.storage import PostgresStorage, get_storage
 
@@ -14,7 +14,8 @@ async def _ciclo_de_vida(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Rede Alimenta IA", docs_url="/docs", lifespan=_ciclo_de_vida)
+app = FastAPI(title="Rede Alimenta IA", docs_url="/docs", lifespan=_ciclo_de_vida,
+              dependencies=[Depends(limites.limite_geral)])
 app.include_router(auth.router)
 app.include_router(usuarios.router)
 app.include_router(doadores.router)
@@ -22,6 +23,8 @@ app.include_router(ongs.router)
 app.include_router(lotes.router)
 app.include_router(doacoes.router)
 app.include_router(kpis.router)
+# o corpo e conferido por dentro da auditoria, pra o 413 sair no log
+app.add_middleware(limites.LimiteDeCorpo)
 erros.instala(app)
 auditoria.instala(app)
 

@@ -58,7 +58,7 @@ testes, e voltaram a passar ao restaurar.
   chega e o do proxy).
 - **403 em vez de 404 pra recurso alheio:** quem esta logado consegue descobrir que um id de lote
   existe (404 vs 403). Os ids sao sequenciais de qualquer jeito.
-- **Nao ha rate limit geral**, so no login. Rate limit do matching e limite de payload sao do dia 18.
+- **Rate limit geral e limite de payload** entraram no dia 18 (`docs/limites.md`); o do `/matching` esta pronto mas a rota ainda nao existe.
 - **Tabela `usuarios` aplicada no Supabase em 06/10 e testada la** (login, 401, 403, 429,
   FK, `check` do schema e conflito de e-mail; 27 verificacoes, dados de teste apagados depois). Pra repetir: `python -m infra.db.testar_login`.
   O banco nao tem nenhum admin: antes do primeiro login na nuvem, defina `ADMIN_EMAIL` e

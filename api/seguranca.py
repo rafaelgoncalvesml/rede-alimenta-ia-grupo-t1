@@ -182,3 +182,17 @@ def nega(usuario: Usuario, motivo: str):
 
 def e_admin(u: Usuario) -> bool:
     return u.papel == Papel.admin
+
+
+def quem_chama(request: Request) -> str:
+    """Chave pra limitar pedidos: o usuario do token, se for valido, senao o IP. Nao levanta
+    erro: quem nao tem token valido leva 401 mais adiante, aqui so precisa de uma chave."""
+    cab = request.headers.get("authorization", "")
+    if cab.lower().startswith("bearer "):
+        try:
+            c = jwt.decode(cab[7:], segredo(), algorithms=[ALGORITMO],
+                           options={"require": ["exp", "sub"]})
+            return "u" + str(c["sub"])
+        except jwt.PyJWTError:
+            pass
+    return "ip:" + (request.client.host if request.client else "?")
