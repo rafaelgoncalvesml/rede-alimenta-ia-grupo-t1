@@ -14,7 +14,7 @@ vai como "nao esta no repo", porque pode estar so na maquina de alguem.
 | Banco em nuvem conectado | feito | Rafael | Conferi hoje: `GET /health/db` volta `postgres` em 1,7 s e `GET /lotes` em 0,6 s. O banco esta vazio (0 lotes) |
 | Frontend consumindo a API real | **nao esta no repo** | Gustavo | `app/` continua so com `.gitkeep`, igual ao dia 7 |
 | STRIDE v2 com mitigacao | **nao esta no repo** | Anthony | A v1 tambem nunca apareceu. A unica mencao a STRIDE nos arquivos e o checkpoint da Semana 1 |
-| Bandit rodado local | nao rodou | Anthony | Nao esta instalado no venv e nao existe `docs/security/`. Nao instalei por conta propria |
+| Bandit rodado local | feito | Rafael / Anthony | `bandit -r api ml infra data -x "*/tests/*"` em 1409 linhas: 0 alta, 0 media, 4 baixa (ver abaixo). Rodei eu, o roadmap dava isso ao Anthony no dia 11 e nao ha nada dele no repo; o relatorio versionado em `docs/security/` continua com ele na Semana 3 |
 
 Fora do checklist: tambem nao existe `.github/` (CI com ruff e pytest, pedido na Semana 1).
 
@@ -37,6 +37,20 @@ Fora do checklist: tambem nao existe `.github/` (CI com ruff e pytest, pedido na
 
 O primeiro `POST /lotes` leva ~1,1 s porque carrega o modelo; os seguintes ficam em ~16 ms.
 Na demo, fazer um cadastro de aquecimento antes.
+
+## Bandit (rodado hoje, bandit 1.9.4)
+
+Escopo: `api`, `ml`, `infra` e `data`, sem os testes. Nos testes o Bandit acusa 269 `assert`
+(B101), que e ruido do pytest e nao vale tratar.
+
+| Achado | Severidade | Onde | O que fiz |
+|---|---|---|---|
+| B310, `urlopen` aceita qualquer esquema | media | `api/seed_dev.py` | **Corrigido.** `API_URL` vem de variavel de ambiente e aceitaria `file://`. Agora o script recusa o que nao comeca com `http://` ou `https://` (testado com `file:///etc/passwd`) |
+| B311, `random` nao e criptografico | baixa | `data/gerar_dataset_v0.py` | Deixei. E o gerador do dataset simulado, com seed fixa de proposito |
+| B101 x3, `assert` | baixa | `data/gerar_dataset_v0.py` | Deixei. Sao conferencias do dataset gerado, script que roda so na mao |
+
+Sobrou 0 alta e 0 media, entao o item do checklist fecha. O Bandit nao olha dependencia nem
+imagem: `pip-audit` e Trivy ficam pra Semana 3.
 
 ## O que a demo mostra e o que nao mostra
 
@@ -68,8 +82,7 @@ Semana 3 e pesada (Docker, pipeline com Bandit e Trivy, auth, KPIs, rate limit).
 2. **Streamlit com 3 telas e mais nada:** cadastrar lote, listar ordenado por prioridade,
    confirmar doacao. Fica pra depois: mapa, filtros, dashboard (esse e da Semana 3 mesmo).
 3. **STRIDE v2 como tabela** (ativo, ameaca, mitigacao). Sem diagrama bonito.
-4. **Bandit hoje.** Sao dois comandos, nao precisa esperar o pipeline. Se o grupo concordar
-   em instalar: `pip install bandit` no venv e `bandit -r api ml -ll`.
+4. **Bandit no pipeline** (workflow do Anthony): ja roda limpo, so falta plugar com `-ll`.
 5. **Auth (dia 15) so depois do matching.** Se o matching escorregar, o dashboard v1 da
    Semana 3 perde o dado que ele precisa.
 
@@ -86,7 +99,7 @@ e o teste contra Postgres de verdade.
 
 ## Nao conferido
 
-- Bandit, ruff, `pip-audit` e `gitleaks` nao estao instalados aqui, entao nenhum rodou.
+- Ruff, `pip-audit` e `gitleaks` nao estao instalados aqui, entao nenhum rodou.
 - O fluxo da demo rodou em memoria; no Supabase so conferi saude e listagem, nao gravei
   nada de novo.
 - Nao consegui ver se Anthony e Gustavo tem trabalho em branch fora do GitHub.
