@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from api import auditoria, erros, seguranca
-from api.routers import auth, doacoes, doadores, lotes, ongs, usuarios
+from api.routers import auth, doacoes, doadores, kpis, lotes, ongs, usuarios
 from api.storage import PostgresStorage, get_storage
 
 
@@ -21,6 +21,7 @@ app.include_router(doadores.router)
 app.include_router(ongs.router)
 app.include_router(lotes.router)
 app.include_router(doacoes.router)
+app.include_router(kpis.router)
 erros.instala(app)
 auditoria.instala(app)
 
