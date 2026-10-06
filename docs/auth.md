@@ -59,8 +59,10 @@ testes, e voltaram a passar ao restaurar.
 - **403 em vez de 404 pra recurso alheio:** quem esta logado consegue descobrir que um id de lote
   existe (404 vs 403). Os ids sao sequenciais de qualquer jeito.
 - **Nao ha rate limit geral**, so no login. Rate limit do matching e limite de payload sao do dia 18.
-- **Tabela `usuarios` nao foi aplicada no Supabase.** Esta em `infra/db/schema.sql`; os testes
-  rodam em memoria. O caminho Postgres de usuarios nao foi exercitado contra o banco.
+- **Tabela `usuarios` aplicada no Supabase em 06/10 e testada la** (login, 401, 403, 429,
+  FK, `check` do schema e conflito de e-mail; 27 verificacoes, dados de teste apagados depois). Pra repetir: `python -m infra.db.testar_login`.
+  O banco nao tem nenhum admin: antes do primeiro login na nuvem, defina `ADMIN_EMAIL` e
+  `ADMIN_PASSWORD` no ambiente do Render e suba a API uma vez.
 - **O `doador` nao pode marcar a entrega**: `PUT /lotes/{id}` com `doado` e do doador dono ou do
   admin, nao da ONG. Se o grupo quiser que a ONG confirme o recebimento, e uma rota nova.
 - **O Streamlit ainda nao manda token** (e nao existe no repo). Quando entrar, guarda o token em
