@@ -14,6 +14,19 @@ admin_ou_doador = exige(Papel.admin, Papel.doador)
 # do tempo de match). Cancelar e voltar o lote pra disponivel em PUT /lotes/{id}.
 
 
+def _confere_ong_recebe(lote: dict, ong: dict) -> None:
+    """A ONG precisa aguentar o peso e aceitar a categoria (issue 9). Confere aqui e nao so no
+    matching: quem chama o POST direto, sem passar pelo matching, tambem esbarra."""
+    if lote["quantidade_kg"] > ong["capacidade_kg"]:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Lote de {lote['quantidade_kg']:g} kg passa da capacidade da ONG "
+                   f"({ong['capacidade_kg']:g} kg)")
+    # tipo vazio = o modelo falhou no cadastro (README, dia 11): sem categoria nao ha o que conferir
+    if lote.get("tipo") and lote["tipo"] not in ong["necessidades"]:
+        raise HTTPException(status_code=409, detail="A ONG nao declarou necessidade dessa categoria")
+
+
 @router.post("", response_model=Doacao, status_code=201,
              dependencies=[Depends(limites.limita("doacoes", limites.DOACOES))])
 def confirmar_doacao(
@@ -25,8 +38,10 @@ def confirmar_doacao(
         raise HTTPException(status_code=404, detail="Lote nao encontrado")
     if not e_admin(usuario) and lote["doador_id"] != usuario.doador_id:
         nega(usuario, "doar lote de outro doador")
-    if db.buscar("ongs", dados.ong_id) is None:
+    ong = db.buscar("ongs", dados.ong_id)
+    if ong is None:
         raise HTTPException(status_code=404, detail="ONG nao encontrada")
+    _confere_ong_recebe(lote, ong)
     doacao = db.confirmar_doacao(dados.lote_id, dados.ong_id, dados.distancia_km, dados.score)
     if doacao is None:
         raise HTTPException(status_code=409, detail="Lote nao esta disponivel")

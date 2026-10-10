@@ -94,3 +94,36 @@ def test_update_pode_limpar_coordenadas(client):
     r = client.put("/ongs/1", json={"latitude": None, "longitude": None})
     assert r.status_code == 200
     assert r.json()["latitude"] is None
+
+
+# ---- necessidades so aceita as 6 categorias do modelo (issue 7) ----
+
+def test_necessidade_fora_das_categorias_da_422(client):
+    r = client.post("/ongs", json={**ONG, "necessidades": ["hortifruti", "graos"]})
+    assert r.status_code == 422
+    assert client.get("/ongs").json() == []
+
+
+def test_update_tambem_confere_as_categorias(client):
+    client.post("/ongs", json=ONG)
+    assert client.put("/ongs/1", json={"necessidades": ["graos"]}).status_code == 422
+    r = client.put("/ongs/1", json={"necessidades": ["Carnes_Peixes", "preparados"]})
+    assert r.json()["necessidades"] == ["carnes_peixes", "preparados"]
+
+
+def test_as_seis_categorias_passam(client):
+    from ml.features import CATEGORIAS
+    r = client.post("/ongs", json={**ONG, "necessidades": list(CATEGORIAS)})
+    assert r.status_code == 201
+
+
+# ---- teto de capacidade (issue 11) ----
+
+def test_capacidade_acima_do_teto_da_422(client):
+    from api.models import CAPACIDADE_MAX_KG
+    assert client.post("/ongs", json={**ONG, "capacidade_kg": CAPACIDADE_MAX_KG}).status_code == 201
+    assert client.post("/ongs", json={**ONG, "cnpj": "11222333000144",
+                                      "capacidade_kg": CAPACIDADE_MAX_KG + 1}).status_code == 422
+    assert client.post("/ongs", json={**ONG, "cnpj": "11222333000144",
+                                      "capacidade_kg": 1e308}).status_code == 422
+    assert client.put("/ongs/1", json={"capacidade_kg": 1e9}).status_code == 422

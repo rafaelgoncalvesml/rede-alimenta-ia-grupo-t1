@@ -159,3 +159,25 @@ def test_lote_vencido_depois_de_gravado_ainda_e_lido(com_doador):
     get_storage().atualizar("lotes", 1, {"validade": str(date.today() - timedelta(days=3))})
     assert com_doador.get("/lotes/1").status_code == 200
     assert len(com_doador.get("/lotes").json()) == 1
+
+
+# ---- tetos de quantidade e validade (issue 11) ----
+
+def test_quantidade_acima_do_teto_da_422(com_doador):
+    from api.models import QUANTIDADE_MAX_KG
+    c = com_doador
+    assert c.post("/lotes", json=lote(quantidade_kg=QUANTIDADE_MAX_KG)).status_code == 201
+    assert c.post("/lotes", json=lote(quantidade_kg=QUANTIDADE_MAX_KG + 1)).status_code == 422
+    assert c.post("/lotes", json=lote(quantidade_kg=1e308)).status_code == 422
+    assert c.put("/lotes/1", json={"quantidade_kg": 1e6}).status_code == 422
+
+
+def test_validade_alem_do_teto_da_422(com_doador):
+    from api.models import VALIDADE_MAX_DIAS
+    c = com_doador
+    limite = date.today() + timedelta(days=VALIDADE_MAX_DIAS)
+    assert c.post("/lotes", json=lote(validade=str(limite))).status_code == 201
+    r = c.post("/lotes", json=lote(validade=str(limite + timedelta(days=1))))
+    assert r.status_code == 422
+    assert c.post("/lotes", json=lote(validade="9999-12-31")).status_code == 422
+    assert c.put("/lotes/1", json={"validade": "9999-12-31"}).status_code == 422

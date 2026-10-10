@@ -1,7 +1,17 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from ml.features import CATEGORIAS
+
+# Tetos de negocio (issue 11). PREMISSA do Rafael, o grupo ainda nao confirmou: o maior lote do
+# dataset v1 tem 1176 kg e a maior validade, 325 dias. Os tetos deixam folga e barram erro de
+# digitacao ou de unidade (1e308 kg, validade em 9999). So valem na entrada (Create/Update);
+# uma linha ja gravada nao e rejeitada na leitura.
+QUANTIDADE_MAX_KG = 5_000
+CAPACIDADE_MAX_KG = 100_000
+VALIDADE_MAX_DIAS = 730
 
 
 class TipoPessoa(str, Enum):
@@ -86,6 +96,21 @@ def _limpa_necessidades(itens: list[str]) -> list[str]:
     return list(dict.fromkeys(i for i in limpos if i))
 
 
+def _necessidades_validas(itens: list[str]) -> list[str]:
+    # as mesmas 6 categorias que o modelo grava em Lote.tipo; texto livre nunca casaria (issue 7)
+    itens = _limpa_necessidades(itens)
+    fora = [i for i in itens if i not in CATEGORIAS]
+    if fora:
+        raise ValueError(f"necessidades fora das categorias ({', '.join(CATEGORIAS)}): {', '.join(fora)}")
+    return itens
+
+
+def _capacidade_no_teto(v: float | None) -> float | None:
+    if v is not None and v > CAPACIDADE_MAX_KG:
+        raise ValueError(f"capacidade_kg acima do teto de {CAPACIDADE_MAX_KG} kg")
+    return v
+
+
 class OngBase(BaseModel):
     nome: str = Field(min_length=1, max_length=200)
     cnpj: str  # sem mascara, igual ao schema.sql
@@ -125,7 +150,12 @@ class OngBase(BaseModel):
 
 
 class OngCreate(OngBase):
-    pass
+    _checa_capacidade = field_validator("capacidade_kg")(_capacidade_no_teto)
+
+    @field_validator("necessidades")
+    @classmethod
+    def _so_categorias(cls, v: list[str]) -> list[str]:
+        return _necessidades_validas(v)
 
 
 class OngUpdate(BaseModel):
@@ -140,6 +170,8 @@ class OngUpdate(BaseModel):
     capacidade_kg: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     necessidades: list[str] | None = None
 
+    _checa_capacidade = field_validator("capacidade_kg")(_capacidade_no_teto)
+
     @model_validator(mode="after")
     def _obrigatorios_nao_viram_null(self):
         # so as coordenadas podem ser limpas com null
@@ -149,7 +181,7 @@ class OngUpdate(BaseModel):
         if self.estado is not None:
             self.estado = self.estado.upper()
         if self.necessidades is not None:
-            self.necessidades = _limpa_necessidades(self.necessidades)
+            self.necessidades = _necessidades_validas(self.necessidades)
         return self
 
 
@@ -182,13 +214,25 @@ class LoteBase(BaseModel):
 
 def _validade_nao_vencida(v: date | None) -> date | None:
     # so na entrada: um lote ja gravado pode vencer depois e continuar legivel
-    if v is not None and v < date.today():
+    if v is None:
+        return v
+    hoje = date.today()
+    if v < hoje:
         raise ValueError("lote vencido nao pode ser cadastrado")
+    if v > hoje + timedelta(days=VALIDADE_MAX_DIAS):
+        raise ValueError(f"validade alem do teto de {VALIDADE_MAX_DIAS} dias")
+    return v
+
+
+def _quantidade_no_teto(v: float | None) -> float | None:
+    if v is not None and v > QUANTIDADE_MAX_KG:
+        raise ValueError(f"quantidade_kg acima do teto de {QUANTIDADE_MAX_KG} kg por lote")
     return v
 
 
 class LoteCreate(LoteBase):
     _checa_validade = field_validator("validade")(_validade_nao_vencida)
+    _checa_quantidade = field_validator("quantidade_kg")(_quantidade_no_teto)
 
 
 class LoteUpdate(BaseModel):
@@ -200,6 +244,7 @@ class LoteUpdate(BaseModel):
     status: StatusLote | None = None
 
     _checa_validade = field_validator("validade")(_validade_nao_vencida)
+    _checa_quantidade = field_validator("quantidade_kg")(_quantidade_no_teto)
 
     @model_validator(mode="after")
     def _obrigatorios_nao_viram_null(self):

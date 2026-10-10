@@ -18,6 +18,7 @@ DOADOR = {
 ONG = {
     "nome": "Casa Esperanca", "cnpj": "11222333000144", "endereco": "Rua A, 1",
     "cidade": "Sao Paulo", "estado": "SP", "capacidade_kg": 100,
+    "necessidades": ["hortifruti"],
 }
 LOTE = {
     "doador_id": 1, "descricao": "tomate", "quantidade_kg": 20,

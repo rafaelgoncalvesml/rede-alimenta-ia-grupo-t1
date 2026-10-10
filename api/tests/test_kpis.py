@@ -128,7 +128,7 @@ def mundo(client, usuario_de, monkeypatch):
 
     def ong(n, uf):
         return {"nome": f"O{n}", "cnpj": f"9876543200{n:04d}", "endereco": "R", "cidade": "X",
-                "estado": uf, "capacidade_kg": 500, "necessidades": []}
+                "estado": uf, "capacidade_kg": 500, "necessidades": ["hortifruti"]}
 
     for n in (1, 2):
         client.post("/doadores", json=doador(n))

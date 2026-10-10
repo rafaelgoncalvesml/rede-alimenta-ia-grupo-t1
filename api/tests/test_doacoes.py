@@ -189,3 +189,50 @@ def test_fluxo_do_cadastro_ate_a_doacao(client):
     depois = client.get(f"/lotes/{lote['id']}").json()
     assert depois["status"] == "reservado"
     assert depois["prioridade"] == lote["prioridade"]
+
+
+# ---- a ONG precisa aguentar o peso e aceitar a categoria (issue 9) ----
+
+def test_ong_com_capacidade_menor_que_o_lote_da_409(client):
+    client.post("/doadores", json=DOADOR)
+    client.post("/ongs", json={**ONG, "capacidade_kg": 10})
+    client.post("/lotes", json=LOTE)          # 20 kg
+    r = confirma(client)
+    assert r.status_code == 409
+    assert "capacidade" in r.json()["detail"]
+    assert client.get("/lotes/1").json()["status"] == "disponivel"
+    assert client.get("/doacoes").json() == []
+
+
+def test_lote_do_tamanho_exato_da_capacidade_passa(client):
+    client.post("/doadores", json=DOADOR)
+    client.post("/ongs", json={**ONG, "capacidade_kg": 20})
+    client.post("/lotes", json=LOTE)
+    assert confirma(client).status_code == 201
+
+
+def test_ong_sem_a_categoria_do_lote_da_409(client):
+    client.post("/doadores", json=DOADOR)
+    client.post("/ongs", json={**ONG, "necessidades": ["padaria"]})
+    client.post("/lotes", json=LOTE)          # iogurte = laticinios
+    r = confirma(client)
+    assert r.status_code == 409
+    assert "necessidade" in r.json()["detail"]
+    assert client.get("/lotes/1").json()["status"] == "disponivel"
+
+
+def test_ong_sem_nenhuma_necessidade_nao_recebe(client):
+    # o caso da rodada 3 do dia 13: capacidade 0 e necessidades vazias voltavam 201
+    client.post("/doadores", json=DOADOR)
+    client.post("/ongs", json={**ONG, "capacidade_kg": 0, "necessidades": []})
+    client.post("/lotes", json={**LOTE, "quantidade_kg": 300})
+    assert confirma(client).status_code == 409
+
+
+def test_lote_sem_categoria_so_confere_a_capacidade(client):
+    # modelo fora do ar no cadastro grava tipo nulo; isso nao pode travar a doacao
+    client.post("/doadores", json=DOADOR)
+    client.post("/ongs", json={**ONG, "necessidades": []})
+    client.post("/lotes", json=LOTE)
+    get_storage().atualizar("lotes", 1, {"tipo": None})
+    assert confirma(client).status_code == 201
