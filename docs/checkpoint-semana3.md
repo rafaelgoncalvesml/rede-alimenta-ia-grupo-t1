@@ -1,0 +1,70 @@
+# Checkpoint da Semana 3 (dia 21)
+
+Conferido em 10/10 contra o GitHub (`origin/main` e as 9 branches abertas) e rodando o que
+existe na minha maquina. Mesma regra das semanas anteriores: o que nao aparece no repo vai como
+"nao esta no repo", porque pode estar so na maquina de alguem. Nao existe nenhuma branch do
+Anthony, do Gustavo ou do Charles alem dos uploads do Charles na `main` de 29/09.
+
+## Checklist
+
+| Item | Estado | Dono | Observacao |
+|---|---|---|---|
+| Dockerfile da API | feito | Rafael | `api/Dockerfile`, testado em 06/10 contra o Supabase (`docs/container.md`). **Nao rebuildado hoje**: o Docker Desktop nao sobe na minha maquina (`docs/fluxo-dia20.md`) |
+| `docker-compose.yml` subindo tudo | **nao esta no repo** | Anthony | Sem ele nao ha "um comando" e nao ha frontend pra subir junto |
+| Pipeline (ruff, pytest, Bandit, Trivy, build) | **nao esta no repo** | Anthony | Nao existe `.github/`. Rodei ruff, pytest e Bandit na mao nos dias 14 e 20; Trivy nunca rodou |
+| Autenticacao e papeis (RBAC) | feito | Rafael | JWT, 3 papeis, matriz de acesso negado testada. 28 verificacoes contra o Supabase hoje |
+| Endpoints de KPI | feito | Rafael | `/kpis/impacto` e `/kpis/ia`. **Nada os consome**: nao ha dashboard no repo |
+| Rate limit e validacao de entrada | feito | Rafael | Limite por rota e de corpo (dia 18). Hoje entraram os tetos de quantidade, capacidade e validade |
+| Relatorios SAST v1 em `docs/security/` | **nao esta no repo** | Anthony | A pasta nao existe. O Bandit do dia 14 esta em `docs/checkpoint-semana2.md`, nao no formato pedido |
+| Dashboard v1 | **nao esta no repo** | Gustavo | `app/` so tem `.gitkeep` desde o dia 7 |
+| Matching | **nao esta no repo** | Charles | Issue 8 |
+| Seed de demo (3 doadores, 4 ONGs, 5 lotes) | **nao esta no repo** | Charles | O `api/seed_dev.py` e meu e cria 1 doador e 1 ONG |
+
+Das seis linhas do checklist oficial da semana, **tres fecham** (RBAC, KPIs como endpoint,
+rate limit e validacao) e **tres nao** (compose, pipeline, SAST em `docs/security/`). O marco
+"dashboard v1" tambem esta aberto.
+
+## O que rodou hoje
+
+- `pytest api ml`: **408 passaram**, 0 falhas. Em memoria, Python 3.14.
+- `ruff check .`: limpo.
+- `python -m api.fluxo_http` em `uvicorn` real: 16 verificacoes ok (cadastro, prioridade, doacao,
+  repeticao, entrega, KPIs, recusas novas, sem token).
+- `python -m infra.db.testar_login` contra o Supabase: 28 ok, banco igual antes e depois.
+- **Nao rodou:** nada em container, Bandit, `pip-audit`, Trivy. Bandit e `pip-audit` ficaram
+  como no dia 14; o codigo mudou desde entao (auth, limites, KPIs) e **nenhum dos dois foi
+  repetido**. Vale rodar antes do dia 24.
+
+## Issues
+
+Fechadas no codigo (PR a abrir): 7, 9, 10, 11 e 12, detalhes em `docs/fluxo-dia20.md`. Segue
+aberta a 8 (matching e tela). Os tetos da 11 e a regra da 9 sao palpite meu e **precisam do
+aval do grupo** (`docs/decisoes.md`).
+
+## PRs
+
+Nove PRs meus abertos e empilhados (5, 6 e 13 a 19), **nenhum na `main`**, mais o de hoje por abrir. A `main` nao
+tem modelo na API, doacao, auth, KPIs, limites nem a imagem. O Render faz deploy da `main`:
+sem esses merges, o dia 22 publicaria uma API velha. Ordem: 5, 6, 13, 14, 15, 16, 17, 18, 19,
+depois o de hoje. Cada merge pede pipeline verde pela regra do grupo, e o pipeline nao existe.
+
+## Preparo do deploy (dia 21)
+
+`render.yaml` agora descreve a API (Docker, regiao `ohio`, `/health`, deploy manual) e
+`.env.example` lista todas as variaveis. Passo a passo, o que e do Render e o que depende de
+conta: `docs/deploy-render.md`. Nao validei o arquivo no Render.
+
+## Pra decidir no sync de segunda
+
+1. Aceita os tetos (5000 kg, 100000 kg, 730 dias) e a regra da doacao (issue 9)?
+2. ONG sem `necessidades` recebe tudo ou nada? Hoje, nada.
+3. `FORWARDED_ALLOW_IPS` no Render pro rate limit por IP (`docs/deploy-render.md`).
+4. Quem faz o compose e o pipeline antes do dia 22, que e quando o deploy depende deles.
+
+## Nao conferido
+
+- O `gitleaks` continua nao instalado; a busca de segredos foi por `git grep` (nada achado em
+  arquivos versionados; o `.env` real esta fora do git).
+- Nao consegui ver se Anthony, Gustavo e Charles tem trabalho local nao enviado.
+- O `.env.example` antigo ficou no historico do git com o ref do Supabase e o usuario do Atlas.
+  Nao e senha; decidir se vale rotacionar o usuario do Atlas.

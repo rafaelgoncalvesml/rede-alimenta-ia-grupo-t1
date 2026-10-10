@@ -1,8 +1,34 @@
 services:
   - type: web
-    name: rede-alimenta-ia-deploy-test
-    runtime: python
+    name: rede-alimenta-ia-api
+    runtime: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
     plan: free
-    rootDir: infra/deploy-test
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    # o Supabase esta em us-east-2 (Ohio); a mesma regiao corta a latencia de cada consulta
+    region: ohio
+    healthCheckPath: /health
+    # o deploy sai do workflow do dia 22, so depois de Bandit e Trivy passarem
+    autoDeployTrigger: "off"
+    envVars:
+      # o Dockerfile sobe o uvicorn na 8000; sem isto o Render espera a 10000
+      - key: PORT
+        value: "8000"
+      # em memoria a API sobe sem erro e perde tudo a cada deploy
+      - key: STORAGE
+        value: postgres
+      - key: TOKEN_MINUTOS
+        value: "30"
+      - key: MAX_BODY_BYTES
+        value: "65536"
+      - key: KG_POR_REFEICAO
+        value: "0.5"
+      # segredos: o Render gera ou pergunta na criacao do blueprint, nunca ficam no repo
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
