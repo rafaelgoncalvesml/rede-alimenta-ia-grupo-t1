@@ -58,7 +58,9 @@ depois o de hoje. Cada merge pede pipeline verde pela regra do grupo, e o pipeli
 
 `render.yaml` agora descreve a API (Docker, regiao `ohio`, `/health`, deploy manual) e
 `.env.example` lista todas as variaveis. Passo a passo, o que e do Render e o que depende de
-conta: `docs/deploy-render.md`. Nao validei o arquivo no Render.
+conta: `docs/deploy-render.md`. **Atualizacao de 12/10:** o Blueprint foi aplicado e a API esta no
+ar com o Supabase; as tres variaveis `sync: false` precisaram ser adicionadas na mao, e o cold
+start do plano free foi de 22 s (detalhes e plano de abertura no mesmo arquivo).
 
 ## Pra decidir no sync de segunda
 
