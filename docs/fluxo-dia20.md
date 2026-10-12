@@ -1,14 +1,14 @@
 # Fluxo ponta a ponta e bugs (dia 20)
 
-Rodado em 10/10 pelo Rafael. **O fluxo nao rodou em container**: o Docker Desktop da minha
-maquina nao sobe hoje (ver "O que ficou de fora"). O que rodou foi a mesma API, em `uvicorn`
-de verdade e por HTTP, e o teste de auth contra o Supabase. A imagem do dia 19 nao mudou de
-estrutura, mas **nao foi reconstruida** com o codigo de hoje.
+Rodado em 10/10 e 12/10 pelo Rafael. O fluxo rodou em tres frentes: `uvicorn` local, o
+container em memoria e o container contra o Supabase. A imagem foi **reconstruida com o codigo
+de hoje** (`docker build -t rede-alimenta-api -f api/Dockerfile .`, 714 MB, igual a do dia 19).
 
 ## O que rodou
 
-`python -m api.fluxo_http` (script novo) contra `uvicorn api.main:app` em memoria, admin
-descartavel: **16 verificacoes, 0 falhas.**
+`python -m api.fluxo_http` (script novo, fala HTTP com uma API que ja esta de pe):
+**16 verificacoes, 0 falhas**, tanto no `uvicorn` quanto no container em memoria (`docker run`
+sem `STORAGE=postgres`, admin descartavel `@exemplo.invalid`).
 
 | Passo | Resposta |
 |---|---|
@@ -23,9 +23,14 @@ descartavel: **16 verificacoes, 0 falhas.**
 | `GET /kpis/ia` | 200 |
 | sem token, `GET /lotes` | 401 |
 
-Contra o Supabase, `python -m infra.db.testar_login` (em processo, nao em container): 28
-verificacoes ok, contagem de linhas igual antes e depois. Os testes: `pytest api ml`, 408
-passaram (eram 397), `ruff check` limpo.
+Container contra o Supabase (`STORAGE=postgres`, `API_URL=... python -m infra.db.testar_login`,
+o mesmo teste do dia 19): **28 verificacoes ok, 0 falhas**, contagem de linhas igual antes e
+depois. Container pronto em poucos segundos, 140 MiB depois do teste (uma amostra), usuario
+uid 10001, logs sem traceback, sem URL de banco e sem JWT.
+
+Fora do container: `pytest api ml`, 408 passaram (eram 397); `ruff check` limpo; Bandit 0 alta
+e 0 media (4 baixas, as mesmas do dia 14, no gerador do dataset); `pip-audit` sem
+vulnerabilidade conhecida nos tres `requirements.txt`.
 
 **Matching e dashboard nao entraram no fluxo porque nao existem no repo** (issue 8). O passo
 do meio continua sendo a escolha da ONG na mao.
@@ -59,12 +64,17 @@ com o que a ONG ja recebeu. Nao existe campo de estoque da ONG pra fazer diferen
 
 ## O que ficou de fora
 
-- **Container.** O Docker Desktop 4.86 cai ao iniciar com `initializing Inference manager:
-  listening on unix://.../Docker/run/dockerInference: remove ...: The file cannot be accessed
-  by the system`. Sao tres arquivos de socket antigos (06/10) em `%LOCALAPPDATA%\Docker\run`
-  que o Windows nao deixa apagar (`del` e `fsutil` voltam erro 1920). Deve resolver com
-  reinicio da maquina; nao mexi em reset de fabrica. Com o Docker de pe, o roteiro e:
-  `docker build -t rede-alimenta-api -f api/Dockerfile .`, `docker run` em memoria com admin
-  `...@exemplo.invalid` e `API_URL=... python -m api.fluxo_http`.
-- **`docker compose up`, Trivy, pipeline.** Nao existem no repo (Anthony, dias 15 a 19).
+- **`docker compose up`, Trivy, pipeline.** Nao existem no repo (Anthony, dias 15 a 19). Eu nao
+  instalei o Trivy: scanner de terceiro e decisao do grupo (`docs/container.md`).
 - **Teste de bug e malicioso na API** (`docs/security/testes.md`) e do Anthony.
+- **Outra maquina.** So testei na minha (Windows).
+
+## Docker Desktop (nota pro grupo)
+
+Na minha maquina o Docker Desktop 4.86 nao subia: `initializing Inference manager ... remove
+...dockerInference: The file cannot be accessed by the system`, e depois o mesmo erro no
+`docker-secrets-engine\engine.sock`. Eram sockets antigos que o Windows nao deixava apagar
+(`del` e `fsutil` voltam erro 1920) e nem o reinicio limpou. O que resolveu, sem perder nada:
+fechar o Docker e **renomear** as pastas `%LOCALAPPDATA%\Docker\run` e
+`%LOCALAPPDATA%\docker-secrets-engine` (o Docker recria). Se alguem do grupo travar nisso na
+hora do `docker compose up`, e esse o caminho.

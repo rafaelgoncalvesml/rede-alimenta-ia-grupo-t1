@@ -51,7 +51,11 @@ Todas estao listadas em `.env.example`, com placeholder.
   Render o `request.client.host` e o do proxy, entao todo pedido anonimo cai no mesmo balde
   (o login tem limite proprio por e-mail, esse nao sofre). Autenticado conta por usuario e
   nao muda. Ligar `FORWARDED_ALLOW_IPS=*` no uvicorn resolveria, mas deixaria o cliente
-  forjar o `X-Forwarded-For`; por isso **nao liguei** e deixo a decisao pro grupo.
+  forjar o `X-Forwarded-For`; por isso **nao liguei**. Procurei como o Render expoe o IP real
+  e nao ha pagina oficial; so relatos em foruns (o Render acrescentaria ao cabecalho sem
+  limpar o que o cliente mandou, e o numero de saltos nao esta garantido). Entao o certo e
+  **medir no dia 23**: mandar um `X-Forwarded-For` falso pra URL publica e ver o que chega em
+  `request.headers` antes de escolher qual entrada da lista usar.
 - **Memoria.** Free tier tem 512 MB. No container deu ~136 MiB depois de carregar o modelo
   (uma amostra). Conferir no Render e item do Charles no dia 22.
 - **Limite em memoria.** Contadores de rate limit e de login ficam no processo; funciona com

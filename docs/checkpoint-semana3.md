@@ -9,7 +9,7 @@ Anthony, do Gustavo ou do Charles alem dos uploads do Charles na `main` de 29/09
 
 | Item | Estado | Dono | Observacao |
 |---|---|---|---|
-| Dockerfile da API | feito | Rafael | `api/Dockerfile`, testado em 06/10 contra o Supabase (`docs/container.md`). **Nao rebuildado hoje**: o Docker Desktop nao sobe na minha maquina (`docs/fluxo-dia20.md`) |
+| Dockerfile da API | feito | Rafael | `api/Dockerfile`, testado em 06/10 contra o Supabase (`docs/container.md`). Rebuildado e testado em 12/10 com o codigo desta semana, em memoria e contra o Supabase (`docs/fluxo-dia20.md`) |
 | `docker-compose.yml` subindo tudo | **nao esta no repo** | Anthony | Sem ele nao ha "um comando" e nao ha frontend pra subir junto |
 | Pipeline (ruff, pytest, Bandit, Trivy, build) | **nao esta no repo** | Anthony | Nao existe `.github/`. Rodei ruff, pytest e Bandit na mao nos dias 14 e 20; Trivy nunca rodou |
 | Autenticacao e papeis (RBAC) | feito | Rafael | JWT, 3 papeis, matriz de acesso negado testada. 28 verificacoes contra o Supabase hoje |
@@ -24,16 +24,18 @@ Das seis linhas do checklist oficial da semana, **tres fecham** (RBAC, KPIs como
 rate limit e validacao) e **tres nao** (compose, pipeline, SAST em `docs/security/`). O marco
 "dashboard v1" tambem esta aberto.
 
-## O que rodou hoje
+## O que rodou (10 e 12/10)
 
 - `pytest api ml`: **408 passaram**, 0 falhas. Em memoria, Python 3.14.
 - `ruff check .`: limpo.
-- `python -m api.fluxo_http` em `uvicorn` real: 16 verificacoes ok (cadastro, prioridade, doacao,
-  repeticao, entrega, KPIs, recusas novas, sem token).
-- `python -m infra.db.testar_login` contra o Supabase: 28 ok, banco igual antes e depois.
-- **Nao rodou:** nada em container, Bandit, `pip-audit`, Trivy. Bandit e `pip-audit` ficaram
-  como no dia 14; o codigo mudou desde entao (auth, limites, KPIs) e **nenhum dos dois foi
-  repetido**. Vale rodar antes do dia 24.
+- Bandit 1.9.4 em `api ml infra data` (2247 linhas, sem os testes): **0 alta, 0 media**, 4
+  baixas (as mesmas do dia 14, no gerador do dataset).
+- `pip-audit` 2.10.1 nos tres `requirements.txt`: sem vulnerabilidade conhecida.
+- Container (imagem reconstruida) com `python -m api.fluxo_http`: 16 verificacoes ok.
+- Container contra o Supabase com `python -m infra.db.testar_login`: 28 ok, banco igual antes e
+  depois.
+- **Nao rodou:** Trivy (nao instalado; decisao do grupo), `docker compose` (nao existe) e
+  qualquer teste em outra maquina.
 
 ## Issues
 
@@ -58,7 +60,7 @@ conta: `docs/deploy-render.md`. Nao validei o arquivo no Render.
 
 1. Aceita os tetos (5000 kg, 100000 kg, 730 dias) e a regra da doacao (issue 9)?
 2. ONG sem `necessidades` recebe tudo ou nada? Hoje, nada.
-3. `FORWARDED_ALLOW_IPS` no Render pro rate limit por IP (`docs/deploy-render.md`).
+3. Rate limit por IP no Render: medir o que chega no `X-Forwarded-For` depois do deploy (`docs/deploy-render.md`).
 4. Quem faz o compose e o pipeline antes do dia 22, que e quando o deploy depende deles.
 
 ## Nao conferido
