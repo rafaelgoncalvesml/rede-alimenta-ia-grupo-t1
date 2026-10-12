@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from api import auditoria
 from api.ia import classificar_lote
-from api.models import Lote, LoteCreate, LoteUpdate, StatusLote
+from api.models import Lote, LoteCreate, LoteUpdate, Papel, StatusLote
+from api.seguranca import Usuario, e_admin, exige, nega, usuario_atual
 from api.storage import get_storage
 
 router = APIRouter(prefix="/lotes", tags=["lotes"])
+
+# escreve: admin ou o doador dono do lote. le: tambem a ONG que recebeu a doacao
+admin_ou_doador = exige(Papel.admin, Papel.doador)
 
 # de onde pode ir. doado e descartado sao finais
 TRANSICOES = {
@@ -23,8 +27,20 @@ def _pega_lote(lote_id: int) -> Lote:
     return Lote(**linha)
 
 
+def _lotes_da_ong(ong_id: int) -> set[int]:
+    doacoes = get_storage().listar("doacoes", ong_id=ong_id, status="confirmada")
+    return {d["lote_id"] for d in doacoes}
+
+
+def _so_dono(usuario: Usuario, lote: Lote) -> None:
+    if not e_admin(usuario) and usuario.doador_id != lote.doador_id:
+        nega(usuario, "lote de outro doador")
+
+
 @router.post("", response_model=Lote, status_code=201)
-def criar_lote(dados: LoteCreate) -> Lote:
+def criar_lote(dados: LoteCreate, usuario: Usuario = Depends(admin_ou_doador)) -> Lote:
+    if not e_admin(usuario) and dados.doador_id != usuario.doador_id:
+        nega(usuario, "lote em nome de outro doador")
     db = get_storage()
     if db.buscar("doadores", dados.doador_id) is None:
         raise HTTPException(status_code=404, detail="Doador nao encontrado")
@@ -40,23 +56,44 @@ def criar_lote(dados: LoteCreate) -> Lote:
 
 
 @router.get("", response_model=list[Lote])
-def listar_lotes(status: StatusLote | None = None, doador_id: int | None = None) -> list[Lote]:
+def listar_lotes(
+    status: StatusLote | None = None,
+    doador_id: int | None = None,
+    usuario: Usuario = Depends(usuario_atual),
+) -> list[Lote]:
+    if usuario.papel == Papel.doador:
+        if doador_id is not None and doador_id != usuario.doador_id:
+            nega(usuario, "lotes de outro doador")
+        doador_id = usuario.doador_id
     filtros = {}
     if status is not None:
         filtros["status"] = status.value
     if doador_id is not None:
         filtros["doador_id"] = doador_id
-    return [Lote(**l) for l in get_storage().listar("lotes", **filtros)]
+    linhas = get_storage().listar("lotes", **filtros)
+    if usuario.papel == Papel.ong:
+        meus = _lotes_da_ong(usuario.ong_id)
+        linhas = [l for l in linhas if l["id"] in meus]
+    return [Lote(**l) for l in linhas]
 
 
 @router.get("/{lote_id}", response_model=Lote)
-def buscar_lote(lote_id: int) -> Lote:
-    return _pega_lote(lote_id)
+def buscar_lote(lote_id: int, usuario: Usuario = Depends(usuario_atual)) -> Lote:
+    lote = _pega_lote(lote_id)
+    if usuario.papel == Papel.ong:
+        if lote_id not in _lotes_da_ong(usuario.ong_id):
+            nega(usuario, "lote sem doacao pra essa ong")
+    else:
+        _so_dono(usuario, lote)
+    return lote
 
 
 @router.put("/{lote_id}", response_model=Lote)
-def atualizar_lote(lote_id: int, dados: LoteUpdate) -> Lote:
+def atualizar_lote(
+    lote_id: int, dados: LoteUpdate, usuario: Usuario = Depends(admin_ou_doador)
+) -> Lote:
     lote = _pega_lote(lote_id)
+    _so_dono(usuario, lote)
     mudancas = dados.model_dump(exclude_unset=True, mode="json")
     if not mudancas:
         return lote
@@ -86,8 +123,9 @@ def atualizar_lote(lote_id: int, dados: LoteUpdate) -> Lote:
 
 
 @router.delete("/{lote_id}", status_code=204)
-def remover_lote(lote_id: int) -> None:
+def remover_lote(lote_id: int, usuario: Usuario = Depends(admin_ou_doador)) -> None:
     lote = _pega_lote(lote_id)
+    _so_dono(usuario, lote)
     if lote.status in (StatusLote.reservado, StatusLote.doado):
         raise HTTPException(status_code=409, detail=f"Lote {lote.status.value} nao pode ser apagado")
     db = get_storage()

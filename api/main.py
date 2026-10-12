@@ -1,10 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-from api import auditoria, erros
-from api.routers import doacoes, doadores, lotes, ongs
+from api import auditoria, erros, seguranca
+from api.routers import auth, doacoes, doadores, lotes, ongs, usuarios
 from api.storage import PostgresStorage, get_storage
 
-app = FastAPI(title="Rede Alimenta IA", docs_url="/docs")
+
+@asynccontextmanager
+async def _ciclo_de_vida(app: FastAPI):
+    seguranca.valida_config()  # sem JWT_SECRET a API nao sobe
+    seguranca.garantir_admin()
+    yield
+
+
+app = FastAPI(title="Rede Alimenta IA", docs_url="/docs", lifespan=_ciclo_de_vida)
+app.include_router(auth.router)
+app.include_router(usuarios.router)
 app.include_router(doadores.router)
 app.include_router(ongs.router)
 app.include_router(lotes.router)

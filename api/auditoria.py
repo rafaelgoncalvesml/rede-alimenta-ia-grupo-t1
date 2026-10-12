@@ -1,9 +1,9 @@
 """Log de auditoria: uma linha JSON por pedido e uma por mudanca de dado.
 
 Sai no stdout (e o que o Render guarda). Nao grava corpo de pedido nem querystring: ali
-vao CPF/CNPJ, e-mail e telefone, dado pessoal que nao pode parar em log (LGPD). Ainda nao
-ha login, entao "quem" e o IP do cliente. Atras do proxy do Render e o IP do proxy; o
-X-Forwarded-For nao entra porque o cliente pode forjar.
+vao CPF/CNPJ, e-mail e telefone, dado pessoal que nao pode parar em log (LGPD). "Quem" e o
+id do usuario do token (quando ha) e o IP do cliente. Atras do proxy do Render o IP e o do
+proxy; o X-Forwarded-For nao entra porque o cliente pode forjar.
 """
 import json
 import logging
@@ -73,6 +73,7 @@ def instala(app: FastAPI) -> None:
                 path=request.url.path[:200],
                 status=status,
                 ms=round((time.perf_counter() - inicio) * 1000, 1),
+                usuario_id=getattr(request.state, "usuario_id", None),
                 ip=request.client.host if request.client else None,
                 mutacao=request.method in MUTACOES,
             ))
