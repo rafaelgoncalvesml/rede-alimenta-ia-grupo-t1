@@ -133,7 +133,7 @@ informativos, o servidor nao recalcula). Status e timestamps sao sempre do servi
 - A tabela nova esta em `infra/db/schema.sql`; no Supabase, rode
   `python infra/db/aplicar_schema.py` (seguro repetir).
 
-## Autenticacao e papeis (dia 15)
+## Autenticacao e papeis (dias 15 e 16)
 
 Todo endpoint, menos `/health`, `/docs` e `POST /auth/login`, pede token. Detalhes e
 decisoes em `docs/auth.md`.
@@ -150,7 +150,8 @@ decisoes em `docs/auth.md`.
 | `doador` | ler e editar o proprio cadastro; criar, ver, editar e apagar os proprios lotes; confirmar doacao dos proprios lotes; listar as ONGs |
 | `ong` | listar as ONGs e editar a propria; ver os lotes e doacoes que recebeu |
 
-Sem token valido volta 401; papel ou dono errado volta 403.
+Sem token valido volta 401; papel ou dono errado volta 403. A matriz completa esta em
+`api/tests/test_acesso_negado.py`.
 
 Erros e auditoria (dia 13): todo erro volta como JSON `{"detail": ...}`.
 
