@@ -1,0 +1,22 @@
+# Fora da imagem. O .env em especial nunca pode entrar: la estao as senhas do banco.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.ruff_cache
+
+# testes, dados de treino, docs e infra nao rodam em producao
+api/tests
+ml/tests
+ml/eda_v0.py
+ml/eda_v0.md
+data
+docs
+infra
+*.md
