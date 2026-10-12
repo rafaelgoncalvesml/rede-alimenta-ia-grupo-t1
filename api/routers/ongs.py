@@ -43,5 +43,7 @@ def atualizar_ong(ong_id: int, dados: OngUpdate) -> Ong:
 @router.delete("/{ong_id}", status_code=204)
 def remover_ong(ong_id: int) -> None:
     _pega_ong(ong_id)
-    # TODO dia 12: barrar (409) quando a ONG ja tiver doacao registrada
-    get_storage().apagar("ongs", ong_id)
+    db = get_storage()
+    if db.existe("doacoes", ong_id=ong_id):
+        raise HTTPException(status_code=409, detail="ONG tem doacoes registradas")
+    db.apagar("ongs", ong_id)

@@ -17,6 +17,8 @@ COLUNAS = {
              "capacidade_kg", "necessidades"],
     "lotes": ["doador_id", "descricao", "tipo", "quantidade_kg", "validade",
               "armazenamento", "status", "prioridade"],
+    "doacoes": ["lote_id", "ong_id", "distancia_km", "score", "status", "confirmado_em",
+                "tempo_match_s"],
 }
 # o que o banco preenche sozinho quando a coluna nao vem no insert
 PADROES = {"lotes": {"status": "disponivel", "prioridade": None, "tipo": None}}
@@ -58,6 +60,22 @@ class MemoryStorage:
 
     def apagar(self, tabela, id_):
         return self._linhas[tabela].pop(id_, None) is not None
+
+    def confirmar_doacao(self, lote_id, ong_id, distancia_km, score):
+        """Reserva o lote e grava a doacao de uma vez. None se o lote nao esta disponivel."""
+        lote = self._linhas["lotes"].get(lote_id)
+        if lote is None or lote["status"] != "disponivel":
+            return None
+        lote["status"] = "reservado"
+        doacao = self.criar("doacoes", {
+            "lote_id": lote_id, "ong_id": ong_id, "distancia_km": distancia_km,
+            "score": score, "status": "confirmada",
+        })
+        agora = doacao["criado_em"]
+        return self.atualizar("doacoes", doacao["id"], {
+            "confirmado_em": agora,
+            "tempo_match_s": (agora - lote["criado_em"]).total_seconds(),
+        })
 
 
 class PostgresStorage:
@@ -132,6 +150,28 @@ class PostgresStorage:
 
         q = sql.SQL("DELETE FROM {} WHERE id = %s RETURNING id").format(sql.Identifier(tabela))
         return bool(self._rodar(q, [id_]))
+
+    def confirmar_doacao(self, lote_id, ong_id, distancia_km, score):
+        """Reserva o lote e grava a doacao num unico statement: o UPDATE so pega lote
+        disponivel, entao dois pedidos simultaneos nunca confirmam o mesmo lote."""
+        linhas = self._rodar(
+            """
+            WITH reservado AS (
+                UPDATE lotes SET status = 'reservado'
+                WHERE id = %s AND status = 'disponivel'
+                RETURNING criado_em
+            )
+            INSERT INTO doacoes (lote_id, ong_id, distancia_km, score, status,
+                                 confirmado_em, tempo_match_s)
+            SELECT %s::bigint, %s::bigint, %s::double precision, %s::double precision,
+                   'confirmada', now(),
+                   extract(epoch FROM now() - reservado.criado_em)::double precision
+            FROM reservado
+            RETURNING *
+            """,
+            [lote_id, lote_id, ong_id, distancia_km, score],
+        )
+        return linhas[0] if linhas else None
 
 
 _storage = None

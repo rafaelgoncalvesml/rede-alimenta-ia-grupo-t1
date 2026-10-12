@@ -68,7 +68,13 @@ def atualizar_lote(lote_id: int, dados: LoteUpdate) -> Lote:
         # lote fechado (doado/descartado) nao aceita mais edicao
         raise HTTPException(status_code=409, detail=f"Lote {lote.status.value} nao pode ser editado")
 
-    return Lote(**get_storage().atualizar("lotes", lote_id, mudancas))
+    db = get_storage()
+    if lote.status == StatusLote.reservado and novo_status in (StatusLote.disponivel, StatusLote.descartado):
+        # a reserva caiu: a doacao confirmada vira cancelada antes de o lote mudar, pra
+        # um PUT que falhe no meio poder ser repetido sem deixar o lote preso
+        for d in db.listar("doacoes", lote_id=lote_id, status="confirmada"):
+            db.atualizar("doacoes", d["id"], {"status": "cancelada"})
+    return Lote(**db.atualizar("lotes", lote_id, mudancas))
 
 
 @router.delete("/{lote_id}", status_code=204)
@@ -76,4 +82,7 @@ def remover_lote(lote_id: int) -> None:
     lote = _pega_lote(lote_id)
     if lote.status in (StatusLote.reservado, StatusLote.doado):
         raise HTTPException(status_code=409, detail=f"Lote {lote.status.value} nao pode ser apagado")
-    get_storage().apagar("lotes", lote_id)
+    db = get_storage()
+    if db.existe("doacoes", lote_id=lote_id):
+        raise HTTPException(status_code=409, detail="Lote tem doacao registrada")
+    db.apagar("lotes", lote_id)
