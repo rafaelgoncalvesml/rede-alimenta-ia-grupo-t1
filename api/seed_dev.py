@@ -10,6 +10,8 @@ import os
 import urllib.request
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
+if not API_URL.startswith(("http://", "https://")):
+    raise SystemExit("API_URL precisa comecar com http:// ou https://")
 
 DOADOR = {
     "nome": "Mercado Bom Preco (DEMO)",
@@ -38,7 +40,7 @@ def _req(path, corpo=None):
     req = urllib.request.Request(
         API_URL + path, data=dados, headers={"Content-Type": "application/json"}
     )
-    with urllib.request.urlopen(req) as r:
+    with urllib.request.urlopen(req) as r:  # nosec B310: esquema validado acima
         return json.load(r)
 
 
