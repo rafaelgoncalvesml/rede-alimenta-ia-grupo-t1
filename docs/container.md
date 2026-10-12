@@ -56,8 +56,10 @@ real (o `joblib` guarda pickle), e o teste confirma: o lote cadastrado volta com
 
 - **`docker compose up`.** Nao existe `docker-compose.yml` no repo (e do Anthony, dia 16), entao
   nao testei a parte "do zero na maquina de cada um". So rodei esta imagem sozinha, na minha.
-- **Trivy.** Nao rodei na imagem; e do Anthony (dia 17) e instalar scanner de terceiro e decisao
-  do grupo. O `pip-audit` esta limpo nas dependencias, mas ele nao olha o sistema da imagem.
+- **Trivy.** Em 06/10 nao tinha rodado. Rodou em 12/10 e o Dockerfile mudou por causa dele (pip
+  fora da imagem final, `apt-get upgrade`); relatorio em `docs/security/trivy-imagem.md`.
+  Esta pagina descreve a imagem do dia 19, antes dessas duas mudancas; tamanho e medidas
+  continuam os mesmos (714 MB, ~140 MiB).
 - **Outra maquina.** So testei no Windows. O ponto do "na minha maquina funciona" fica aberto
   ate alguem do grupo repetir.
 - **Memoria no pico e no Render.** A medida de 135 MiB e depois do teste, nao sob carga. O free

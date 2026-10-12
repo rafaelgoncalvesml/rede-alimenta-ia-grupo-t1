@@ -39,3 +39,19 @@ os testes continuam em memoria.
 - Gustavo: pode assumir Streamlit rodando local sem se preocupar com onde
   vai hospedar ainda
 - Anthony: workflow de deploy (dia 22) so precisa mirar Render, nao os dois
+
+# Premissas do dia 20 (Rafael, aguardam o grupo)
+
+Fechei cinco issues sem a decisao do grupo, porque cada uma pedia um numero ou uma regra e
+deixar aberta bloqueava o dia 21. Tudo abaixo e **premissa**: troca com uma constante.
+
+- **Teto de lote: 5000 kg.** O maior lote do dataset v1 tem 1176 kg. `QUANTIDADE_MAX_KG` em
+  `api/models.py`.
+- **Teto de capacidade da ONG: 100000 kg.** Sem fonte; so barra erro de digitacao.
+  `CAPACIDADE_MAX_KG`.
+- **Validade ate 730 dias a frente.** A maior do dataset e 325. `VALIDADE_MAX_DIAS`.
+- **A doacao confere capacidade e categoria** (issue 9), alem do matching. Capacidade e por
+  doacao, nao acumulada. ONG sem `necessidades` nao recebe.
+- **`necessidades` da ONG so aceita as 6 categorias do modelo** (issue 7). Mexer nessa lista
+  e mexer em `ml/features.py`.
+

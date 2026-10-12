@@ -100,10 +100,14 @@ setar `prioridade` (so o modelo vai escrever isso).
 ONG:
 - `cnpj` com ou sem mascara, 14 digitos, guardado sem mascara. CNPJ repetido
   volta 409. Nao muda depois de criada.
-- `capacidade_kg` >= 0. `necessidades` vira minuscula, sem repetido e sem vazio.
+- `capacidade_kg` entre 0 e 100000. `necessidades` vira minuscula, sem repetido e sem vazio, e
+  so aceita as 6 categorias do modelo (`hortifruti`, `padaria`, `laticinios`,
+  `carnes_peixes`, `preparados`, `nao_pereciveis`); outra volta 422.
 
 Lote:
-- Nao aceita `validade` anterior a hoje (422). A checagem e so na entrada.
+- Nao aceita `validade` anterior a hoje nem mais de 730 dias a frente (422), nem
+  `quantidade_kg` acima de 5000. A checagem e so na entrada. Os tetos sao premissa do dia 20
+  (`docs/decisoes.md`).
 - `GET /lotes` aceita `?status=` e `?doador_id=` (pro painel da ONG listar so os
   disponiveis).
 - Status so anda assim: `disponivel` -> `reservado` ou `descartado`;
@@ -129,7 +133,9 @@ informativos, o servidor nao recalcula). Status e timestamps sao sempre do servi
 
 - Reserva o lote (`disponivel` -> `reservado`) e grava a doacao como `confirmada` no
   mesmo passo. Lote ou ONG que nao existe volta 404; lote que nao esta `disponivel`
-  (inclusive confirmado por outro pedido ao mesmo tempo) volta 409.
+  (inclusive confirmado por outro pedido ao mesmo tempo) volta 409. Tambem volta 409
+  se o lote passa da `capacidade_kg` da ONG ou se a categoria dele nao esta nas
+  `necessidades` dela (lote sem `tipo` so confere a capacidade).
 - `confirmado_em` e `tempo_match_s` (confirmacao menos o `criado_em` do lote) ficam
   gravados: o tempo medio de match e um `avg(tempo_match_s)`.
 - Nao existe `PUT` nem `DELETE` de doacao. Se a reserva cai (`PUT /lotes/{id}` de
@@ -182,6 +188,11 @@ path, status, ms, ip) e uma por mudanca de dado (`tipo: evento`: `lote.criado`,
 nao aparecem. Sem login ainda, "quem" e so o IP (atras do proxy do Render e o do proxy).
 Codigo em `api/erros.py` e `api/auditoria.py`.
 
+## Deploy
+
+`render.yaml` sobe a API pela imagem Docker. Variaveis, passo a passo e riscos em
+`docs/deploy-render.md`; a lista completa esta em `.env.example`.
+
 ## Status
 
-Semana 1 de producao. Ver `docs/checkpoint-semana1.md`.
+Fim da Semana 3. Ver `docs/checkpoint-semana3.md` (o que fechou e o que nao esta no repo).
