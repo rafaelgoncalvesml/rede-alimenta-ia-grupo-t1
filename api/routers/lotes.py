@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from api.ia import classificar_lote
 from api.models import Lote, LoteCreate, LoteUpdate, StatusLote
 from api.storage import get_storage
 
@@ -26,7 +27,12 @@ def criar_lote(dados: LoteCreate) -> Lote:
     db = get_storage()
     if db.buscar("doadores", dados.doador_id) is None:
         raise HTTPException(status_code=404, detail="Doador nao encontrado")
-    return Lote(**db.criar("lotes", dados.model_dump(mode="json")))
+    novo = dados.model_dump(mode="json")
+    try:
+        novo.update(classificar_lote(novo))
+    except ValueError as erro:
+        raise HTTPException(status_code=422, detail=str(erro))
+    return Lote(**db.criar("lotes", novo))
 
 
 @router.get("", response_model=list[Lote])
