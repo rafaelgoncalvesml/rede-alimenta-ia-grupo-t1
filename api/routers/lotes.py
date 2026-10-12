@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api import auditoria
+from api import auditoria, limites
 from api.ia import classificar_lote
 from api.models import Lote, LoteCreate, LoteUpdate, Papel, StatusLote
 from api.seguranca import Usuario, e_admin, exige, nega, usuario_atual
@@ -37,7 +37,8 @@ def _so_dono(usuario: Usuario, lote: Lote) -> None:
         nega(usuario, "lote de outro doador")
 
 
-@router.post("", response_model=Lote, status_code=201)
+@router.post("", response_model=Lote, status_code=201,
+             dependencies=[Depends(limites.limita("lotes", limites.LOTES))])
 def criar_lote(dados: LoteCreate, usuario: Usuario = Depends(admin_ou_doador)) -> Lote:
     if not e_admin(usuario) and dados.doador_id != usuario.doador_id:
         nega(usuario, "lote em nome de outro doador")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api import auditoria
+from api import auditoria, limites
 from api.models import Doacao, DoacaoCreate, Papel, StatusDoacao
 from api.seguranca import Usuario, e_admin, exige, nega, usuario_atual
 from api.storage import get_storage
@@ -14,7 +14,8 @@ admin_ou_doador = exige(Papel.admin, Papel.doador)
 # do tempo de match). Cancelar e voltar o lote pra disponivel em PUT /lotes/{id}.
 
 
-@router.post("", response_model=Doacao, status_code=201)
+@router.post("", response_model=Doacao, status_code=201,
+             dependencies=[Depends(limites.limita("doacoes", limites.DOACOES))])
 def confirmar_doacao(
     dados: DoacaoCreate, usuario: Usuario = Depends(admin_ou_doador)
 ) -> Doacao:

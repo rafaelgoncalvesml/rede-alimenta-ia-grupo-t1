@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api import auditoria, seguranca
+from api import auditoria, limites, seguranca
 from api.models import Papel, Usuario, UsuarioCreate
 from api.storage import get_storage
 
@@ -13,7 +13,8 @@ def _publico(linha: dict) -> Usuario:
     return Usuario(**{k: v for k, v in linha.items() if k != "senha_hash"})
 
 
-@router.post("", response_model=Usuario, status_code=201)
+@router.post("", response_model=Usuario, status_code=201,
+             dependencies=[Depends(limites.limita("usuarios", limites.USUARIOS))])
 def criar_usuario(dados: UsuarioCreate) -> Usuario:
     db = get_storage()
     if db.existe("usuarios", email=dados.email):

@@ -10,7 +10,7 @@ import pytest  # noqa: E402
 from argon2 import PasswordHasher  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-from api import seguranca  # noqa: E402
+from api import limites, seguranca  # noqa: E402
 from api.main import app  # noqa: E402
 from api.storage import get_storage  # noqa: E402
 
@@ -32,6 +32,7 @@ def entra(email: str, senha: str) -> TestClient:
 def _limpa():
     get_storage().reset()
     seguranca._falhas.clear()
+    limites.reset()
     seguranca.garantir_admin()
 
 
