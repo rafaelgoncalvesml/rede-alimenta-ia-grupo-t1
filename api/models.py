@@ -94,7 +94,7 @@ class OngBase(BaseModel):
     estado: str = Field(pattern=UF_RE)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
-    capacidade_kg: float = Field(ge=0)
+    capacidade_kg: float = Field(ge=0, allow_inf_nan=False)
     necessidades: list[str] = []  # tipos de alimento que a ONG aceita receber
 
     @field_validator("nome", "endereco", "cidade")
@@ -137,7 +137,7 @@ class OngUpdate(BaseModel):
     estado: str | None = Field(default=None, pattern=UF_RE)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
-    capacidade_kg: float | None = Field(default=None, ge=0)
+    capacidade_kg: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     necessidades: list[str] | None = None
 
     @model_validator(mode="after")
@@ -173,11 +173,11 @@ class StatusLote(str, Enum):
 
 class LoteBase(BaseModel):
     doador_id: int
-    descricao: str = Field(min_length=1)
-    quantidade_kg: float = Field(gt=0)  # mesmo check do schema.sql
+    descricao: str = Field(min_length=1, max_length=500)
+    quantidade_kg: float = Field(gt=0, allow_inf_nan=False)  # mesmo check do schema.sql
     validade: date
     armazenamento: Armazenamento
-    tipo: str | None = None  # a IA preenche no POST /lotes (dia 15+), por enquanto manual
+    tipo: str | None = Field(default=None, max_length=50)  # a IA preenche no POST /lotes (dia 15+), por enquanto manual
 
 
 def _validade_nao_vencida(v: date | None) -> date | None:
@@ -192,11 +192,11 @@ class LoteCreate(LoteBase):
 
 
 class LoteUpdate(BaseModel):
-    descricao: str | None = Field(default=None, min_length=1)
-    quantidade_kg: float | None = Field(default=None, gt=0)
+    descricao: str | None = Field(default=None, min_length=1, max_length=500)
+    quantidade_kg: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     validade: date | None = None
     armazenamento: Armazenamento | None = None
-    tipo: str | None = None
+    tipo: str | None = Field(default=None, max_length=50)
     status: StatusLote | None = None
 
     _checa_validade = field_validator("validade")(_validade_nao_vencida)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from api import auditoria
 from api.models import Doador, DoadorCreate, DoadorUpdate
 from api.storage import get_storage
 
@@ -18,7 +19,9 @@ def criar_doador(dados: DoadorCreate) -> Doador:
     db = get_storage()
     if db.existe("doadores", documento=dados.documento):
         raise HTTPException(status_code=409, detail="Ja existe doador com esse documento")
-    return Doador(**db.criar("doadores", dados.model_dump(mode="json")))
+    criado = db.criar("doadores", dados.model_dump(mode="json"))
+    auditoria.registrar("doador.criado", doador_id=criado["id"])
+    return Doador(**criado)
 
 
 @router.get("", response_model=list[Doador])
@@ -37,7 +40,9 @@ def atualizar_doador(doador_id: int, dados: DoadorUpdate) -> Doador:
     mudancas = dados.model_dump(exclude_unset=True, mode="json")
     if not mudancas:
         return atual
-    return Doador(**get_storage().atualizar("doadores", doador_id, mudancas))
+    novo = get_storage().atualizar("doadores", doador_id, mudancas)
+    auditoria.registrar("doador.atualizado", doador_id=doador_id, campos=sorted(mudancas))
+    return Doador(**novo)
 
 
 @router.delete("/{doador_id}", status_code=204)
@@ -47,3 +52,4 @@ def remover_doador(doador_id: int) -> None:
     if db.existe("lotes", doador_id=doador_id):
         raise HTTPException(status_code=409, detail="Doador tem lotes cadastrados")
     db.apagar("doadores", doador_id)
+    auditoria.registrar("doador.apagado", doador_id=doador_id)

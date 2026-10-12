@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from api import auditoria
 from api.models import Doacao, DoacaoCreate, StatusDoacao
 from api.storage import get_storage
 
@@ -19,6 +20,8 @@ def confirmar_doacao(dados: DoacaoCreate) -> Doacao:
     doacao = db.confirmar_doacao(dados.lote_id, dados.ong_id, dados.distancia_km, dados.score)
     if doacao is None:
         raise HTTPException(status_code=409, detail="Lote nao esta disponivel")
+    auditoria.registrar("doacao.confirmada", doacao_id=doacao["id"], lote_id=dados.lote_id,
+                        ong_id=dados.ong_id, tempo_match_s=doacao["tempo_match_s"])
     return Doacao(**doacao)
 
 

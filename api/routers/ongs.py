@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from api import auditoria
 from api.models import Ong, OngCreate, OngUpdate
 from api.storage import get_storage
 
@@ -18,7 +19,9 @@ def criar_ong(dados: OngCreate) -> Ong:
     db = get_storage()
     if db.existe("ongs", cnpj=dados.cnpj):
         raise HTTPException(status_code=409, detail="Ja existe ONG com esse CNPJ")
-    return Ong(**db.criar("ongs", dados.model_dump(mode="json")))
+    criada = db.criar("ongs", dados.model_dump(mode="json"))
+    auditoria.registrar("ong.criada", ong_id=criada["id"])
+    return Ong(**criada)
 
 
 @router.get("", response_model=list[Ong])
@@ -37,7 +40,9 @@ def atualizar_ong(ong_id: int, dados: OngUpdate) -> Ong:
     mudancas = dados.model_dump(exclude_unset=True, mode="json")
     if not mudancas:
         return atual
-    return Ong(**get_storage().atualizar("ongs", ong_id, mudancas))
+    nova = get_storage().atualizar("ongs", ong_id, mudancas)
+    auditoria.registrar("ong.atualizada", ong_id=ong_id, campos=sorted(mudancas))
+    return Ong(**nova)
 
 
 @router.delete("/{ong_id}", status_code=204)
@@ -47,3 +52,4 @@ def remover_ong(ong_id: int) -> None:
     if db.existe("doacoes", ong_id=ong_id):
         raise HTTPException(status_code=409, detail="ONG tem doacoes registradas")
     db.apagar("ongs", ong_id)
+    auditoria.registrar("ong.apagada", ong_id=ong_id)
