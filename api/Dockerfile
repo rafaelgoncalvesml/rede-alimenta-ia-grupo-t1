@@ -11,9 +11,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# aplica o que a Debian ja corrigiu desde que a imagem base foi publicada (o Trivy acusou o liblzma5)
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 # as dependencias primeiro: mexer no codigo nao refaz esta camada
 COPY api/requirements.txt api/requirements.txt
-RUN pip install -r api/requirements.txt
+# o pip da imagem base (25.0.1) tem 6 CVEs no Trivy; o 26.2 corrige, mas traz urllib3, msgpack e
+# setuptools embutidos com outros achados. Em producao o pip nao faz nada, entao sai da imagem
+# no mesmo RUN que instala as dependencias.
+RUN pip install --upgrade "pip>=26.2.0" \
+    && pip install -r api/requirements.txt \
+    && pip uninstall -y pip
 
 # a API importa ml.predict e le models/ (o .dockerignore deixa de fora testes, dados e docs)
 COPY api api

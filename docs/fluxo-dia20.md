@@ -30,7 +30,11 @@ uid 10001, logs sem traceback, sem URL de banco e sem JWT.
 
 Fora do container: `pytest api ml`, 408 passaram (eram 397); `ruff check` limpo; Bandit 0 alta
 e 0 media (4 baixas, as mesmas do dia 14, no gerador do dataset); `pip-audit` sem
-vulnerabilidade conhecida nos tres `requirements.txt`.
+vulnerabilidade conhecida nos tres `requirements.txt`. **Trivy** na imagem e no repo
+(`docs/security/trivy-imagem.md`): 0 critica e 0 achado nos pacotes Python depois de duas
+mudancas no `api/Dockerfile` (pip fora da imagem final, `apt-get upgrade`). Ficam 44 HIGH do
+sistema Debian sem correcao publicada. A imagem final foi retestada com o fluxo, em memoria e
+contra o Supabase (28 de 28).
 
 **Matching e dashboard nao entraram no fluxo porque nao existem no repo** (issue 8). O passo
 do meio continua sendo a escolha da ONG na mao.
@@ -64,8 +68,8 @@ com o que a ONG ja recebeu. Nao existe campo de estoque da ONG pra fazer diferen
 
 ## O que ficou de fora
 
-- **`docker compose up`, Trivy, pipeline.** Nao existem no repo (Anthony, dias 15 a 19). Eu nao
-  instalei o Trivy: scanner de terceiro e decisao do grupo (`docs/container.md`).
+- **`docker compose up` e pipeline.** Nao existem no repo (Anthony, dias 15 a 19). O Trivy
+  rodou na mao (`docs/security/trivy-imagem.md`), nao em CI.
 - **Teste de bug e malicioso na API** (`docs/security/testes.md`) e do Anthony.
 - **Outra maquina.** So testei na minha (Windows).
 

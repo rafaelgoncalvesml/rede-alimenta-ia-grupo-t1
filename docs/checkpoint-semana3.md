@@ -11,11 +11,11 @@ Anthony, do Gustavo ou do Charles alem dos uploads do Charles na `main` de 29/09
 |---|---|---|---|
 | Dockerfile da API | feito | Rafael | `api/Dockerfile`, testado em 06/10 contra o Supabase (`docs/container.md`). Rebuildado e testado em 12/10 com o codigo desta semana, em memoria e contra o Supabase (`docs/fluxo-dia20.md`) |
 | `docker-compose.yml` subindo tudo | **nao esta no repo** | Anthony | Sem ele nao ha "um comando" e nao ha frontend pra subir junto |
-| Pipeline (ruff, pytest, Bandit, Trivy, build) | **nao esta no repo** | Anthony | Nao existe `.github/`. Rodei ruff, pytest e Bandit na mao nos dias 14 e 20; Trivy nunca rodou |
+| Pipeline (ruff, pytest, Bandit, Trivy, build) | **nao esta no repo** | Anthony | Nao existe `.github/`. Rodei ruff, pytest, Bandit e Trivy na mao (dias 14, 20 e 21); nada disso roda em CI ainda |
 | Autenticacao e papeis (RBAC) | feito | Rafael | JWT, 3 papeis, matriz de acesso negado testada. 28 verificacoes contra o Supabase hoje |
 | Endpoints de KPI | feito | Rafael | `/kpis/impacto` e `/kpis/ia`. **Nada os consome**: nao ha dashboard no repo |
 | Rate limit e validacao de entrada | feito | Rafael | Limite por rota e de corpo (dia 18). Hoje entraram os tetos de quantidade, capacidade e validade |
-| Relatorios SAST v1 em `docs/security/` | **nao esta no repo** | Anthony | A pasta nao existe. O Bandit do dia 14 esta em `docs/checkpoint-semana2.md`, nao no formato pedido |
+| Relatorios SAST v1 em `docs/security/` | **parcial** | Anthony | A pasta passou a existir com `trivy-imagem.md` (rodado por mim, saida real). Falta o Bandit no mesmo formato (o do dia 14 esta em `docs/checkpoint-semana2.md`) e o `testes.md` do Anthony |
 | Dashboard v1 | **nao esta no repo** | Gustavo | `app/` so tem `.gitkeep` desde o dia 7 |
 | Matching | **nao esta no repo** | Charles | Issue 8 |
 | Seed de demo (3 doadores, 4 ONGs, 5 lotes) | **nao esta no repo** | Charles | O `api/seed_dev.py` e meu e cria 1 doador e 1 ONG |
@@ -34,8 +34,12 @@ rate limit e validacao) e **tres nao** (compose, pipeline, SAST em `docs/securit
 - Container (imagem reconstruida) com `python -m api.fluxo_http`: 16 verificacoes ok.
 - Container contra o Supabase com `python -m infra.db.testar_login`: 28 ok, banco igual antes e
   depois.
-- **Nao rodou:** Trivy (nao instalado; decisao do grupo), `docker compose` (nao existe) e
-  qualquer teste em outra maquina.
+- Trivy 0.75.0 (imagem oficial `aquasec/trivy`) na imagem e no repo: **0 critica**, 0 achado nos
+  pacotes Python, 44 HIGH do sistema Debian **sem correcao publicada**. `--ignore-unfixed` com
+  HIGH e CRITICAL passa. O Trivy achou 4 coisas que consertei (pip da imagem base, `liblzma5`, pip
+  embutido com `urllib3` velho e o `infra/deploy-test` rodando como root); detalhes em
+  `docs/security/trivy-imagem.md`.
+- **Nao rodou:** `docker compose` (nao existe), nada em CI e qualquer teste em outra maquina.
 
 ## Issues
 
