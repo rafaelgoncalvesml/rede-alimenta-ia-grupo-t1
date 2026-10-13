@@ -32,18 +32,66 @@ Todas estao listadas em `.env.example`, com placeholder.
 
 `MONGODB_URI` nao entra: a API nao usa (decisao do dia 4, Supabase pra tudo).
 
-## O que precisa de voce (Rafael) no dia 22
+## Em producao (12/10)
+
+URL publica: `https://rede-alimenta-ia-api.onrender.com`. Deploy feito pelo Blueprint a
+partir da `main` (todos os PRs ate o #20 ja estavam nela).
+
+**Um tropeco que vale lembrar:** o Blueprint criou o servico sem `SUPABASE_DB_URL`,
+`ADMIN_EMAIL` e `ADMIN_PASSWORD` (as tres com `sync: false`; o Render nao perguntou). A API
+subiu, `/health` deu 200, mas `/health/db` e o login davam 500 com
+`KeyError: 'SUPABASE_DB_URL'` no log. Foram adicionadas na aba Environment. **Depois de qualquer
+deploy novo, conferir que as tres continuam la.** `/health` sozinho nao prova que o banco
+esta ligado.
+
+Conferido depois da correcao:
+
+| Teste | Resultado |
+|---|---|
+| `GET /health/db` | 200, `{"status":"ok","storage":"postgres"}` em 0,28 s |
+| `POST /auth/login` com senha errada | 401 |
+| `POST /auth/login` do admin (pelo `/docs`) | 200, `expires_in` 1800 |
+| `GET /lotes` e `GET /kpis/impacto` sem token | 401 |
+
+### Cold start (medido em 12/10)
+
+Servico do plano free, 18 minutos sem nenhum acesso, depois um `curl` no `/health`:
+
+| Pedido | Tempo |
+|---|---|
+| Primeiro, depois de 18 min parado | **22,4 s** (conexao em 0,05 s; o resto foi a API acordar) |
+| Seguinte | 0,25 s |
+| `/health/db` logo depois | 0,28 s |
+
+Uma medida so, num dia so: serve de ordem de grandeza, nao de garantia. Bate com os ~22 s do
+hello world do dia 3. O modelo so carrega no primeiro `POST /lotes` (cerca de 1 s a mais
+localmente); **isso nao medi no Render.** O Render tambem avisa na propria tela que o free
+"pode atrasar pedidos em 50 segundos ou mais".
+
+### Plano de abertura da URL antes da defesa
+
+1. Uns 5 minutos antes: abrir `.../health` no navegador e esperar o `{"status":"ok"}`.
+2. Entrar no `/docs`, logar com o admin e fazer **um `POST /lotes` de aquecimento** (carrega o
+   modelo). Depois pode apagar o lote, se estiver `disponivel`.
+3. Deixar uma aba com `/health/db` e outra com o dashboard abertas (quando ele existir). O servico dorme de novo
+   com ~15 min sem trafego; se a apresentacao tiver pausa longa, repetir o passo 1.
+4. Plano B se a URL cair ou demorar: o container local (`docs/container.md`) com o mesmo
+   Supabase, e o roteiro de `python -m api.demo_checkpoint` em memoria.
+5. Nao usar o `api.fluxo_http` contra a URL publica: ele cria doacoes, e doacao nao tem
+   DELETE, entao ficam no Supabase de producao.
+
+## Passo a passo do deploy (como foi feito)
 
 1. No Render, **New > Blueprint** apontando pro repo, branch `main`. Preencher
    `SUPABASE_DB_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` quando ele perguntar.
-2. Antes disso, **os PRs 5, 6, 13 a 19 e o deste dia tem que estar na `main`** (ordem de
-   numero). Hoje a `main` nao tem auth, doacao nem KPIs: o Render faz deploy da `main`.
+2. Antes disso, os PRs 5, 6 e 13 a 20 tinham que estar na `main` (o Render faz deploy dela).
+   Estavam: foram mergeados em ordem em 12/10.
 3. Se o servico `rede-alimenta-ia-deploy-test` do dia 2 ainda existir na conta, apagar. O
    blueprint novo nao o remove.
 4. `python infra/db/aplicar_schema.py` ja foi aplicado no Supabase (tabela `usuarios`
    inclusa, dia 16). Conferir com `GET /health/db` depois do deploy.
 5. Plano free: o servico dorme depois de um tempo sem trafego e o primeiro pedido paga o
-   cold start. **Medir e definir o plano de abertura da URL e tarefa do dia 23.**
+   cold start. Medido e com plano de abertura na secao acima.
 
 ## Riscos que ja deu pra ver
 
