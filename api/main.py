@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 
 from api import auditoria, erros, limites, seguranca
 from api.routers import auth, doacoes, doadores, kpis, lotes, ongs, usuarios
@@ -41,3 +41,14 @@ def health_db() -> dict[str, str]:
         db.ping()
         return {"status": "ok", "storage": "postgres"}
     return {"status": "ok", "storage": "memory"}
+
+
+# TEMPORARIO (dia 23): so pra ver o que o Render entrega de IP. Sai logo depois do teste.
+@app.get("/diagnostico/ip", tags=["infra"])
+def diagnostico_ip(request: Request) -> dict:
+    nomes = ("x-forwarded-for", "x-real-ip", "true-client-ip", "cf-connecting-ip", "forwarded", "via")
+    return {
+        "client_host": request.client.host if request.client else None,
+        "cabecalhos": {n: request.headers.get(n) for n in nomes},
+    }
+
