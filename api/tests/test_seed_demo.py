@@ -31,25 +31,22 @@ def test_rodar_duas_vezes_nao_duplica_nada(client):
             len(client.get("/lotes").json())) == (3, 4, 5)
 
 
-def test_so_reais_cadastra_apenas_as_ongs_verificadas_na_receita(client):
-    popular(_req(client), so_reais=True)
-
-    ongs = client.get("/ongs").json()
-    assert {o["cnpj"] for o in ongs} == {o["cnpj"] for o in ONGS_REAIS}
-    assert not any("DEMO" in o["nome"] for o in ongs)
-
-
-def test_o_que_e_ficticio_diz_demo_no_nome_e_o_que_e_real_tem_cnpj_de_14_digitos(client):
+def test_as_4_ongs_sao_as_reais_verificadas_na_receita_e_nenhuma_e_ficticia(client):
     popular(_req(client))
 
-    reais = {o["cnpj"] for o in ONGS_REAIS}
-    for o in client.get("/ongs").json():
-        assert (o["cnpj"] in reais) != ("DEMO" in o["nome"]), o["nome"]
-    assert all(len(c) == 14 and c.isdigit() for c in reais)
+    ongs = client.get("/ongs").json()
+    assert {o["cnpj"] for o in ongs} == {o["cnpj"] for o in ONGS_REAIS} and len(ONGS_REAIS) == 4
+    assert not any("DEMO" in o["nome"] for o in ongs)
+    assert all(len(o["cnpj"]) == 14 and o["cnpj"].isdigit() for o in ONGS_REAIS)
+
+
+def test_os_doadores_sao_ficticios_e_dizem_demo_no_nome(client):
+    popular(_req(client))
+
     assert all("DEMO" in d["nome"] for d in client.get("/doadores").json())
 
 
-def test_matching_sobre_o_seed_mostra_distancia_fallback_e_o_lote_sem_ong_possivel(client):
+def test_matching_sobre_o_seed_mostra_distancia_capacidade_e_fallback(client):
     popular(_req(client))
     doadores = {d["id"]: d for d in client.get("/doadores").json()}
     ongs = client.get("/ongs").json()
@@ -63,9 +60,10 @@ def test_matching_sobre_o_seed_mostra_distancia_fallback_e_o_lote_sem_ong_possiv
     assert nomes[tomate["ranking"][0]["ong_id"]].startswith("Banco de Alimentos")  # Pacaembu, a ~3 km
 
     arroz, nomes = rodar("arroz")  # 400 kg: a Casa do Zezinho (300 kg) nao aguenta
-    assert [nomes[r["ong_id"]] for r in arroz["ranking"]] == ["Banco de Alimentos - Associação Civil"]
+    assert [nomes[r["ong_id"]].split(" - ")[0] for r in arroz["ranking"]] == ["Arsenal da Esperança",
+                                                                             "Banco de Alimentos"]
     assert {d["motivo"] for d in arroz["descartadas"]} >= {"capacidade"}
     assert arroz["ranking"][0]["geo_aproximada"] is True  # doador sem coordenada: centro de Santo Andre
 
-    marmita, _ = rodar("marmita")
-    assert marmita["ranking"] == [] and "capacidade" in {d["motivo"] for d in marmita["descartadas"]}
+    marmita, nomes = rodar("marmita")  # so o Arsenal, que serve refeicoes, aceita preparados
+    assert [nomes[r["ong_id"]].split(" - ")[0] for r in marmita["ranking"]] == ["Arsenal da Esperança"]
