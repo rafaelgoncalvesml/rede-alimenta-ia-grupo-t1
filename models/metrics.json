@@ -1,0 +1,142 @@
+{
+  "versao": "v2",
+  "dataset": "data/lotes_v1.csv (SIMULADO)",
+  "metrica_alvo": "f1_macro sobre prioridade (alta, media, baixa)",
+  "n_treino": 866,
+  "n_teste": 217,
+  "seed": 42,
+  "cortes_do_baseline": [
+    1,
+    5
+  ],
+  "validacao_cruzada_f1_macro": {
+    "baseline_dias": 0.6439,
+    "regressao_logistica": 0.5045,
+    "random_forest": 0.7075
+  },
+  "modelo_escolhido": "random_forest",
+  "teste": {
+    "baseline_dias": {
+      "f1_macro": 0.6095,
+      "acuracia": 0.6267,
+      "recall_alta": 0.7753,
+      "alta_prevista_como_baixa": 0.0899,
+      "matriz_confusao": {
+        "ordem": [
+          "alta",
+          "media",
+          "baixa"
+        ],
+        "linhas_real_colunas_previsto": [
+          [
+            69,
+            12,
+            8
+          ],
+          [
+            16,
+            31,
+            28
+          ],
+          [
+            0,
+            17,
+            36
+          ]
+        ]
+      }
+    },
+    "regressao_logistica": {
+      "f1_macro": 0.4915,
+      "acuracia": 0.5576,
+      "recall_alta": 0.9438,
+      "alta_prevista_como_baixa": 0.0,
+      "matriz_confusao": {
+        "ordem": [
+          "alta",
+          "media",
+          "baixa"
+        ],
+        "linhas_real_colunas_previsto": [
+          [
+            84,
+            5,
+            0
+          ],
+          [
+            48,
+            22,
+            5
+          ],
+          [
+            17,
+            21,
+            15
+          ]
+        ]
+      }
+    },
+    "random_forest": {
+      "f1_macro": 0.6687,
+      "acuracia": 0.682,
+      "recall_alta": 0.8315,
+      "alta_prevista_como_baixa": 0.0225,
+      "matriz_confusao": {
+        "ordem": [
+          "alta",
+          "media",
+          "baixa"
+        ],
+        "linhas_real_colunas_previsto": [
+          [
+            74,
+            13,
+            2
+          ],
+          [
+            20,
+            38,
+            17
+          ],
+          [
+            1,
+            16,
+            36
+          ]
+        ]
+      }
+    }
+  },
+  "por_categoria_no_teste": {
+    "carnes_peixes": {
+      "n": 21,
+      "f1_macro": 0.3803
+    },
+    "hortifruti": {
+      "n": 78,
+      "f1_macro": 0.6292
+    },
+    "laticinios": {
+      "n": 23,
+      "f1_macro": 0.6429
+    },
+    "nao_pereciveis": {
+      "n": 30,
+      "f1_macro": 0.3886
+    },
+    "padaria": {
+      "n": 42,
+      "f1_macro": 0.7011
+    },
+    "preparados": {
+      "n": 23,
+      "f1_macro": 0.7125
+    }
+  },
+  "classificador_de_categoria": {
+    "acuracia_teste": 1.0,
+    "n_treino": 843,
+    "n_teste": 214,
+    "aviso": "SIMULADO: as descricoes saem de listas fixas de palavras por categoria, entao esse numero e otimista e nao vale como evidencia de texto real"
+  }
+}
