@@ -29,6 +29,7 @@ Todas estao listadas em `.env.example`, com placeholder.
 | `JWT_SECRET` | `generateValue: true` | O Render gera um valor base64 de 256 bits (44 caracteres, acima do minimo de 32 da API). Nao precisa colar nada |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | `sync: false` | O admin e criado na primeira subida. Senha com 10+ caracteres e **diferente** da de teste |
 | `TOKEN_MINUTOS`, `MAX_BODY_BYTES`, `KG_POR_REFEICAO` | no yaml | Iguais ao padrao do codigo; o fator de refeicao continua premissa (`docs/kpis.md`) |
+| `CONFIAR_CF_CONNECTING_IP` | no yaml, `1` | IP real do cliente no limite de pedidos e no log. So no Render (ver "Riscos") |
 
 `MONGODB_URI` nao entra: a API nao usa (decisao do dia 4, Supabase pra tudo).
 
@@ -110,7 +111,15 @@ localmente); **isso nao medi no Render.** O Render tambem avisa na propria tela 
   | `True-Client-IP` | igual ao `CF-Connecting-IP` |
   | `X-Real-IP`, `Forwarded`, `Via` | ausentes |
 
-  **Opcoes pro grupo decidir** (nao implementei):
+  **Decisao (12/10): opcao 1, implementada.** `api/auditoria.py::ip_do_cliente` usa o
+  `CF-Connecting-IP` so quando `CONFIAR_CF_CONNECTING_IP=1` (ligada no `render.yaml`); sem a
+  variavel, ou com valor que nao seja um IP, volta pro `client.host`. O mesmo IP alimenta o limite
+  de pedidos e o campo `ip` do log. Testes em `api/tests/test_limites.py`. **Falta confirmar em
+  producao depois do deploy** (o campo `ip` do log do Render deve mostrar o IP real, nao `10.x`).
+  A fragilidade da opcao 1 continua: o Render nao documenta o Cloudflare. As outras duas ficam
+  aqui como registro.
+
+  **Opcoes consideradas:**
   1. Usar `CF-Connecting-IP` quando existir, e cair no `client.host` quando nao. Mais
      robusto que contar saltos. Fragilidade: o Render nao documenta que fica atras do
      Cloudflare; se isso mudar, o cabecalho some (cai pro proxy, seguro) ou, pior, passa a vir

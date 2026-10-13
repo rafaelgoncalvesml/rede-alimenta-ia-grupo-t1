@@ -23,6 +23,10 @@ services:
         value: "65536"
       - key: KG_POR_REFEICAO
         value: "0.5"
+      # o Render fica atras do Cloudflare, que sobrescreve o CF-Connecting-IP: so aqui ele vale
+      # como IP do cliente pro limite de pedidos (docs/deploy-render.md). Nunca ligar fora do Render
+      - key: CONFIAR_CF_CONNECTING_IP
+        value: "1"
       # segredos: o Render gera ou pergunta na criacao do blueprint, nunca ficam no repo
       - key: JWT_SECRET
         generateValue: true

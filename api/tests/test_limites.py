@@ -159,3 +159,41 @@ def test_limite_padrao_e_64_kib(monkeypatch):
 def test_pedido_sem_corpo_nao_e_afetado(client, monkeypatch):
     monkeypatch.setenv("MAX_BODY_BYTES", "10")
     assert client.get("/lotes").status_code == 200
+
+
+# ---- IP do cliente atras do Render (CF-Connecting-IP) ----
+
+def _inunda(c, ip, n):
+    cab = {"Authorization": "Bearer lixo", "CF-Connecting-IP": ip}
+    return [c.post("/lotes", json={}, headers=cab).status_code for _ in range(n)]
+
+
+def test_com_a_variavel_ligada_cada_ip_tem_o_seu_balde(anonimo, monkeypatch):
+    monkeypatch.setenv("CONFIAR_CF_CONNECTING_IP", "1")
+    assert 429 in _inunda(anonimo, "203.0.113.7", limites.LOTES + 5)
+    assert set(_inunda(anonimo, "198.51.100.9", 3)) == {401}  # outro cliente nao paga pelo primeiro
+
+
+def test_com_a_variavel_desligada_o_cabecalho_e_ignorado(anonimo, monkeypatch):
+    # fora do Render qualquer cliente poderia forjar o cabecalho pra escapar do limite
+    monkeypatch.delenv("CONFIAR_CF_CONNECTING_IP", raising=False)
+    codigos = _inunda(anonimo, "203.0.113.7", limites.LOTES + 5)
+    codigos += _inunda(anonimo, "198.51.100.9", 3)
+    assert set(codigos[-3:]) == {429}  # mesmo balde, o do client.host
+
+
+def test_cabecalho_que_nao_e_ip_cai_no_client_host(anonimo, monkeypatch):
+    monkeypatch.setenv("CONFIAR_CF_CONNECTING_IP", "1")
+    cab = {"Authorization": "Bearer lixo", "CF-Connecting-IP": "isto-nao-e-ip"}
+    codigos = {anonimo.post("/lotes", json={}, headers=cab).status_code for _ in range(limites.LOTES + 5)}
+    assert codigos == {401, 429}
+
+
+def test_ip_do_cabecalho_vai_pro_log_de_auditoria(anonimo, monkeypatch, caplog):
+    import json
+    import logging
+    monkeypatch.setenv("CONFIAR_CF_CONNECTING_IP", "1")
+    with caplog.at_level(logging.INFO, logger="auditoria"):
+        anonimo.get("/health", headers={"CF-Connecting-IP": "203.0.113.7"})
+    ips = [json.loads(r.getMessage()).get("ip") for r in caplog.records if r.name == "auditoria"]
+    assert "203.0.113.7" in ips
