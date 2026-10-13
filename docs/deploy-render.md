@@ -95,15 +95,33 @@ localmente); **isso nao medi no Render.** O Render tambem avisa na propria tela 
 
 ## Riscos que ja deu pra ver
 
-- **Rate limit por IP atras do proxy.** `api/limites.py` conta pedido sem token por IP. No
-  Render o `request.client.host` e o do proxy, entao todo pedido anonimo cai no mesmo balde
-  (o login tem limite proprio por e-mail, esse nao sofre). Autenticado conta por usuario e
-  nao muda. Ligar `FORWARDED_ALLOW_IPS=*` no uvicorn resolveria, mas deixaria o cliente
-  forjar o `X-Forwarded-For`; por isso **nao liguei**. Procurei como o Render expoe o IP real
-  e nao ha pagina oficial; so relatos em foruns (o Render acrescentaria ao cabecalho sem
-  limpar o que o cliente mandou, e o numero de saltos nao esta garantido). Entao o certo e
-  **medir no dia 23**: mandar um `X-Forwarded-For` falso pra URL publica e ver o que chega em
-  `request.headers` antes de escolher qual entrada da lista usar.
+- **Rate limit por IP atras do proxy.** `api/limites.py` conta pedido sem token por `request.client.host`.
+  No Render isso e o IP do proxy interno (`10.x`), nao o do cliente: medi com uma rota temporaria
+  (12/10, ja removida) e o `client_host` variou entre `10.24.x` e `10.25.x` de um pedido pro outro.
+  O balde anonimo fica dividido entre os proxies, nao por cliente. O login tem limite proprio
+  por e-mail e nao sofre; autenticado conta por usuario.
+
+  **O que o teste mostrou (uma maquina, uma rodada):**
+
+  | Cabecalho | O que chegou na API |
+  |---|---|
+  | `X-Forwarded-For` | `<o que o cliente mandou>, <IP real>, <IP do Cloudflare 162.159.x>, <proxy 10.x>`. O valor forjado vem **primeiro** (esquerda): quem confia na primeira entrada e enganado. O IP real e a **terceira de tras pra frente** |
+  | `CF-Connecting-IP` | sempre o IP real (conferi com `api.ipify.org`). Mandei `True-Client-IP: 9.9.9.9` forjado e voltou o IP real: o Cloudflare sobrescreve, o cliente nao forja |
+  | `True-Client-IP` | igual ao `CF-Connecting-IP` |
+  | `X-Real-IP`, `Forwarded`, `Via` | ausentes |
+
+  **Opcoes pro grupo decidir** (nao implementei):
+  1. Usar `CF-Connecting-IP` quando existir, e cair no `client.host` quando nao. Mais
+     robusto que contar saltos. Fragilidade: o Render nao documenta que fica atras do
+     Cloudflare; se isso mudar, o cabecalho some (cai pro proxy, seguro) ou, pior, passa a vir
+     do cliente sem filtro (forjavel). Ligar so com uma variavel de ambiente
+     (`CONFIAR_CF_CONNECTING_IP=1`) deixa isso explicito.
+  2. Pegar a terceira entrada de tras pra frente do `X-Forwarded-For`. Quebra se o numero de
+     saltos mudar.
+  3. Deixar como esta e registrar como limitacao do plano free. Pro MVP e defesa o risco e
+     baixo: ninguem vai estourar 120 pedidos por minuto na demo.
+
+  `FORWARDED_ALLOW_IPS=*` continua **fora**: deixaria a primeira entrada (forjavel) valer.
 - **Memoria.** Free tier tem 512 MB. No container deu ~136 MiB depois de carregar o modelo
   (uma amostra). Conferir no Render e item do Charles no dia 22.
 - **Limite em memoria.** Contadores de rate limit e de login ficam no processo; funciona com

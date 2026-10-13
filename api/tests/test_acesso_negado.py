@@ -101,9 +101,7 @@ def test_matriz_cobre_todas_as_rotas_da_api():
 
 
 def test_toda_rota_protegida_responde_401_sem_token(anonimo):
-    # TEMPORARIO: /diagnostico/ip sai junto com a rota (chore/diagnostico-xff-temporario)
-    publicas = {("GET", "/health"), ("GET", "/health/db"), ("POST", "/auth/login"),
-                ("GET", "/diagnostico/ip")}
+    publicas = {("GET", "/health"), ("GET", "/health/db"), ("POST", "/auth/login")}
     for r in app.routes:
         if not hasattr(r, "methods") or r.path in ("/docs", "/openapi.json", "/docs/oauth2-redirect",
                                                    "/redoc"):
