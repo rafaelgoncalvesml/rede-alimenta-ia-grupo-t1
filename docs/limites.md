@@ -5,7 +5,8 @@ Codigo em `api/limites.py`, testes em `api/tests/test_limites.py`.
 ## Limite de pedidos por minuto
 
 Janela deslizante de 60 s, por **rota e por quem chama**: o usuario do token, ou o IP quando o
-token falta ou e invalido. Estourou: `429` com `Retry-After` (segundos) e uma linha
+token falta ou e invalido. O IP vem de `auditoria.ip_do_cliente`: o `client.host`, ou o
+`CF-Connecting-IP` quando `CONFIAR_CF_CONNECTING_IP=1` (so no Render, `docs/deploy-render.md`). Estourou: `429` com `Retry-After` (segundos) e uma linha
 `limite.estourado` no log de auditoria.
 
 | Onde | Limite | Por que esse |

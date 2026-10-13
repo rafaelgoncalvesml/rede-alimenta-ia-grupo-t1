@@ -195,4 +195,4 @@ def quem_chama(request: Request) -> str:
             return "u" + str(c["sub"])
         except jwt.PyJWTError:
             pass
-    return "ip:" + (request.client.host if request.client else "?")
+    return "ip:" + (auditoria.ip_do_cliente(request) or "?")

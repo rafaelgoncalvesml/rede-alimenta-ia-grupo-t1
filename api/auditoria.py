@@ -3,10 +3,12 @@
 Sai no stdout (e o que o Render guarda). Nao grava corpo de pedido nem querystring: ali
 vao CPF/CNPJ, e-mail e telefone, dado pessoal que nao pode parar em log (LGPD). "Quem" e o
 id do usuario do token (quando ha) e o IP do cliente. Atras do proxy do Render o IP e o do
-proxy; o X-Forwarded-For nao entra porque o cliente pode forjar.
+proxy (ver ip_do_cliente); o X-Forwarded-For nao entra porque o cliente pode forjar.
 """
+import ipaddress
 import json
 import logging
+import os
 import sys
 import time
 import uuid
@@ -43,6 +45,26 @@ def _linha(**campos) -> str:
     return json.dumps(campos, ensure_ascii=False, default=str)
 
 
+def ip_do_cliente(request: Request) -> str | None:
+    """IP de quem chamou, pro log e pro limite de pedidos.
+
+    Atras do Render o request.client.host e o do proxy interno. O X-Forwarded-For nao serve: o
+    valor que o cliente manda fica na primeira posicao. O Cloudflare na frente do Render
+    sobrescreve o CF-Connecting-IP (testado em 12/10, docs/deploy-render.md), entao so ele e
+    confiavel, e so se CONFIAR_CF_CONNECTING_IP=1. Fora do Render a variavel fica desligada e
+    o cabecalho e ignorado, porque ali qualquer cliente poderia mandar o que quisesse. Valor que
+    nao e um IP valido cai de volta no client.host.
+    """
+    host = request.client.host if request.client else None
+    if os.getenv("CONFIAR_CF_CONNECTING_IP") == "1":
+        cf = request.headers.get("cf-connecting-ip", "").strip()
+        try:
+            return str(ipaddress.ip_address(cf))
+        except ValueError:
+            pass
+    return host
+
+
 def registrar(acao: str, **campos) -> None:
     """Evento de negocio, ex.: registrar("doacao.confirmada", doacao_id=3, lote_id=1)."""
     log.info(_linha(tipo="evento", acao=acao, **campos))
@@ -74,7 +96,7 @@ def instala(app: FastAPI) -> None:
                 status=status,
                 ms=round((time.perf_counter() - inicio) * 1000, 1),
                 usuario_id=getattr(request.state, "usuario_id", None),
-                ip=request.client.host if request.client else None,
+                ip=ip_do_cliente(request),
                 mutacao=request.method in MUTACOES,
             ))
             return resposta
