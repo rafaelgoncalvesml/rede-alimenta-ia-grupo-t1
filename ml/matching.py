@@ -39,7 +39,7 @@ def matching(lote: dict, doador: dict, ongs: list[dict]) -> dict:
             descartadas.append({"ong_id": o["id"], "motivo": motivo})
             continue
         km = haversine_km(origem[0], origem[1], destino[0], destino[1])
-        ranking.append({"ong_id": o["id"], "distancia_km": round(km, 2),
+        ranking.append({"ong_id": o["id"], "nome": o.get("nome"), "distancia_km": round(km, 2),
                         "score": round(min(km / RAIO_REFERENCIA_KM, 1.0), 4),
                         "geo_aproximada": origem[2] or destino[2]})
     ranking.sort(key=lambda r: (r["distancia_km"], r["ong_id"]))

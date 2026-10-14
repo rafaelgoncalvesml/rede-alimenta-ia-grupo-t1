@@ -7,8 +7,9 @@ ajusta. Os numeros sao os do repo em 13/10.
 
 ## Antes de comecar (Rafael abre a demo)
 
-- Abrir `/health` da URL publica 10 minutos antes e fazer um `POST /lotes` de aquecimento. Sem isso o
-  primeiro pedido leva ~22 s e o primeiro lote ~10 s.
+- Abrir `/health` da URL publica 10 minutos antes: o primeiro pedido acorda o servico (~22 s). O modelo
+  agora carrega na subida (`modelo.carregado` no log do Render), entao o `POST /lotes` de aquecimento so
+  e preciso se o log nao mostrar essa linha. Medir depois do redeploy.
 - Deixar o banco no estado da demo (5 lotes, 3 doadores, 4 ONGs reais) com
   `python -m infra.db.reset_demo reset --aplicar`, que apaga e recarrega `data/seed_demo.json`. Na
   apresentacao, dizer que capacidade e necessidades das ONGs sao simuladas.
@@ -24,8 +25,9 @@ o que vai vencer. Um slide so, sem numero de fonte que o grupo nao tenha conferi
 O doador cadastra o lote, a IA diz o que e urgente, a doacao e confirmada para uma ONG e o impacto
 aparece em KPIs. Mostrar o diagrama de arquitetura (secao Arquitetura do README).
 
-Hoje a ONG de cada doacao e escolhida por quem chama a API. A funcao de matching existe, mas nao
-esta ligada a uma rota (issue #8). Ajustar este trecho conforme a decisao de 14/10.
+O matching entrou na API em 14/10: `POST /matching/{lote_id}` devolve as ONGs que aceitam a categoria e
+o peso do lote, da mais perto pra mais longe. A tela de Matchings usa essa rota e confirma a doacao por
+ela; o servidor recalcula distancia e score, o cliente nao manda esses numeros.
 
 ## 3. IA (Charles, 2 min)
 
@@ -38,10 +40,14 @@ regra so por dias. Recall da classe "alta" de 0,83, e 2,2% das altas mandadas pr
 Limites, ditos antes de a banca perguntar: o dataset e simulado, entao as metricas mostram que o pipeline
 funciona e nao a qualidade em dado real. O ganho sobre a regra simples e pequeno: a diferenca de F1 vai de
 -0,001 a +0,117 no intervalo de 95% (README). A acuracia de 1,00 do classificador de categoria vem de
-descricoes geradas de listas fixas. O aviso de dado simulado tambem sai em todo `/kpis/ia`.
+descricoes geradas de listas fixas. O aviso de dado simulado tambem sai em todo `/kpis/ia`. O historico
+do dashboard (`data/historico_simulado.json`) e todo simulado, com 12 ONGs inventadas; as 4 ONGs da demo
+sao reais (CNPJ ativo na Receita), mas capacidade e necessidades delas sao simuladas e elas nao foram
+consultadas.
 
-Matching: `ml/matching.py` filtra ONG por categoria e capacidade e ordena por distancia (haversine). Se a
-rota `POST /matching/{lote_id}` nao entrar, dizer que a funcao esta pronta e testada, mas nao exposta.
+Matching: `ml/matching.py` filtra ONG por categoria e capacidade (a mesma regra que a doacao confere) e
+ordena por distancia (haversine); `score` = distancia / 100 km, menor e melhor. Sem peso aprendido: e uma
+regra, nao um modelo, e assim deve ser dito. Distancia em linha reta; sem coordenada, centro da cidade.
 
 ## 4. DevSecOps (Anthony, 2 min)
 
@@ -68,18 +74,22 @@ Se houver tela de dashboard, ela entra no lugar do Swagger. Sem tela, o caminho 
 
 1. `POST /lotes` com um lote de alface (refrigerado, validade em 2 dias): a resposta traz `prioridade` e
    `tipo` vindos do modelo.
-2. `POST /doacoes` ligando o lote a uma ONG: o lote passa a `reservado`.
-3. Repetir a doacao: volta 409, porque o lote ja nao esta disponivel.
-4. `PUT /lotes/{id}` com `doado`.
-5. `GET /kpis/impacto`: `kg_doados`, `refeicoes_geradas` (com `fator_kg_por_refeicao: 0.5` visivel, que e
-   premissa do grupo) e `tempo_medio_match_s`.
+2. `POST /matching/{id}` do lote: o ranking das ONGs reais da demo, com distancia e score.
+3. `POST /doacoes` com a primeira do ranking: o lote passa a `reservado`, com distancia e score gravados
+   pelo servidor.
+4. Repetir a doacao: volta 409, porque o lote ja nao esta disponivel.
+5. `PUT /lotes/{id}` com `doado`.
+6. `GET /kpis/impacto`: `kg_doados`, `refeicoes_geradas` (com `fator_kg_por_refeicao: 0.5` visivel) e
+   `tempo_medio_match_s`. Dizer: "0,5 kg por refeicao e premissa nossa; a unica referencia que achamos e
+   dos EUA, 0,544 kg, da Feeding America. Nao e fonte brasileira."
 
 Se algo quebrar, seguir o roteiro e explicar falando, sem mexer em codigo.
 
 ## 7. Impacto e fechamento (Gustavo 30 s, Charles 30 s)
 
-O que mudaria com a rede funcionando e o que falta pra chegar la: matching ligado a uma rota, interface
-e dados reais. Terminar nos proximos passos, sem frase de efeito.
+O que mudaria com a rede funcionando e o que falta pra chegar la: dados reais de lotes e de ONGs
+(capacidade e necessidades informadas por elas), distancia de rota em vez de linha reta e o frontend
+publicado. Terminar nos proximos passos, sem frase de efeito.
 
 ## Perguntas provaveis
 

@@ -30,6 +30,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from ml import relogio
 from ml.features import (
     ARMAZENAMENTOS,
     CATEGORIAS,
@@ -72,7 +73,7 @@ def _quantidade(valor) -> float:
 
 
 def predict(lote: dict, hoje: date | None = None, modelo: dict | None = None) -> dict:
-    hoje = hoje or date.today()
+    hoje = hoje or relogio.hoje()
     modelo = modelo or carregar_modelo()
 
     validade = _validade(lote.get("validade"))

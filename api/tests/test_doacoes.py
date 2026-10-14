@@ -48,15 +48,16 @@ def test_confirma_grava_timestamps_e_reserva_o_lote(base):
     d = r.json()
     assert d["status"] == "confirmada"
     assert (d["lote_id"], d["ong_id"]) == (1, 1)
-    assert (d["distancia_km"], d["score"]) == (3.2, 0.81)
+    # o servidor ignora 3.2/0.81 e calcula: doador e ONG sem coordenada caem no centro de SP
+    assert (d["distancia_km"], d["score"]) == (0.0, 0.0)
     assert d["confirmado_em"] and d["criado_em"]
     assert d["tempo_match_s"] >= 0
     assert base.get("/lotes/1").json()["status"] == "reservado"
 
 
-def test_distancia_e_score_sao_opcionais(base):
+def test_distancia_e_score_nao_precisam_vir_do_cliente(base):
     d = confirma(base).json()
-    assert d["distancia_km"] is None and d["score"] is None
+    assert (d["distancia_km"], d["score"]) == (0.0, 0.0)
 
 
 def test_tempo_de_match_conta_desde_o_cadastro_do_lote(base):

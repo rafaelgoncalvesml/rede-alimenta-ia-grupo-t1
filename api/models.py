@@ -3,6 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from ml import relogio
 from ml.features import CATEGORIAS
 
 # Tetos de negocio (issue 11). PREMISSA do Rafael, o grupo ainda nao confirmou: o maior lote do
@@ -216,7 +217,7 @@ def _validade_nao_vencida(v: date | None) -> date | None:
     # so na entrada: um lote ja gravado pode vencer depois e continuar legivel
     if v is None:
         return v
-    hoje = date.today()
+    hoje = relogio.hoje()
     if v < hoje:
         raise ValueError("lote vencido nao pode ser cadastrado")
     if v > hoje + timedelta(days=VALIDADE_MAX_DIAS):
@@ -272,7 +273,8 @@ class DoacaoCreate(BaseModel):
 
     lote_id: int
     ong_id: int
-    # vem do POST /matching; ate o servidor recalcular, sao informativos
+    # ignorados: o servidor calcula os dois com ml.matching (api/routers/doacoes.py). Ficam no
+    # corpo so pra nao quebrar cliente antigo que ainda os manda
     distancia_km: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     score: float | None = Field(default=None, ge=0, allow_inf_nan=False)
 
