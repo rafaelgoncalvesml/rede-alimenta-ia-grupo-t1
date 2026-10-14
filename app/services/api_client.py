@@ -1,6 +1,7 @@
 
 
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,6 +16,8 @@ class ErroAPI(Exception):
 
 
 
+
+RANKING_TTL_S = 30
 
 TRANSICOES = {
 
@@ -98,7 +101,8 @@ def configuracao_api():
 
 
 
-    return str(url).strip().rstrip("/")
+    # no Windows o requests tenta ::1 antes de 127.0.0.1 e cada chamada a "localhost" perde ~2 s
+    return str(url).strip().rstrip("/").replace("//localhost", "//127.0.0.1")
 
 
 
@@ -187,6 +191,8 @@ class ClienteAPI:
 
 
     def requisicao(self, metodo, caminho, dados=None):
+        if metodo != "GET" and not caminho.startswith("/matching"):
+            st.session_state.pop("_cache_ranking", None)
 
         try:
 
@@ -951,7 +957,14 @@ class ClienteAPI:
     def sugerir_ongs(self, lote_id):
         """Ranking do POST /matching/{lote_id}: {"ranking": [...], "descartadas": [...]}."""
         self._exige_api("O ranking de ONGs")
-        return self.requisicao("POST", f"/matching/{lote_id}")
+        # o Streamlit reroda o script a cada clique e a rota tem teto de 20 pedidos por minuto
+        cache = st.session_state.setdefault("_cache_ranking", {})
+        guardado = cache.get(lote_id)
+        if guardado and time.monotonic() - guardado[0] < RANKING_TTL_S:
+            return guardado[1]
+        ranking = self.requisicao("POST", f"/matching/{lote_id}")
+        cache[lote_id] = (time.monotonic(), ranking)
+        return ranking
 
     def confirmar_doacao(self, lote_id, ong_id):
         """Reserva o lote pra ONG. Distancia e score sao calculados no servidor."""
