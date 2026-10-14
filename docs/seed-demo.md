@@ -1,6 +1,8 @@
 # Seed de demo
 
 `python -m api.seed_demo`: 3 doadores, 4 ONGs e 5 lotes, idempotente (rodar de novo nao duplica).
+O mesmo conteudo esta em `data/seed_demo.json`, que o `infra/db/reset_demo.py` usa pra apagar e
+recarregar o banco em nuvem; `api/tests/test_reset_demo.py` falha se os dois divergirem.
 Testes: `api/tests/test_seed_demo.py` (roda contra a API real, em memoria). Precisa de `ADMIN_EMAIL`
 e `ADMIN_PASSWORD`, como o `api/seed_dev.py`. Conferido em 12 e 13/10/2026.
 

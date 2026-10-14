@@ -9,8 +9,9 @@ ajusta. Os numeros sao os do repo em 13/10.
 
 - Abrir `/health` da URL publica 10 minutos antes e fazer um `POST /lotes` de aquecimento. Sem isso o
   primeiro pedido leva ~22 s e o primeiro lote ~10 s.
-- Deixar o banco no estado da demo (5 lotes, 3 doadores, 4 ONGs). O script depende da decisao do grupo
-  em 14/10: `infra/db/reset_demo.py` (Rafael) ou `api/seed_demo.py` (Charles).
+- Deixar o banco no estado da demo (5 lotes, 3 doadores, 4 ONGs reais) com
+  `python -m infra.db.reset_demo reset --aplicar`, que apaga e recarrega `data/seed_demo.json`. Na
+  apresentacao, dizer que capacidade e necessidades das ONGs sao simuladas.
 - Login de admin ja feito no Swagger (`Authorize`) e aba aberta em `/docs`.
 
 ## 1. Problema (Gustavo, 1 min)

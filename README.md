@@ -122,7 +122,7 @@ A lista completa, com placeholders, esta em `.env.example`. O `.env` fica fora d
 
 ## Reset da demo
 
-`infra/db/reset_demo.py` devolve o banco em nuvem ao estado inicial da demo. O seed fica em `data/seed_demo.json`: 3 doadores, 4 ONGs e 5 lotes, todos marcados `(DEMO)` e simulados. A validade dos lotes e contada em dias a partir do dia do reset, entao nenhum lote nasce vencido. O arquivo foi escrito pelo Rafael pra destravar o script. Charles escreveu outro seed, `api/seed_demo.py` (4 ONGs reais, `docs/seed-demo.md`); os dois coexistem e o grupo ainda nao decidiu qual vai pra defesa.
+`infra/db/reset_demo.py` devolve o banco em nuvem ao estado inicial da demo. O seed fica em `data/seed_demo.json`: 3 doadores (DEMO) e 5 lotes simulados e 4 ONGs reais (dados publicos da Receita e do OpenStreetMap, com `capacidade_kg` e `necessidades` simuladas). E o mesmo conteudo de `api/seed_demo.py`, de Charles (`docs/seed-demo.md`), e um teste falha se os dois se afastarem. Use `reset_demo` pra voltar o banco ao estado da demo; use `api.seed_demo` pra popular uma API de pe sem apagar nada. A validade dos lotes e contada em dias a partir do dia do reset, entao nenhum lote nasce vencido.
 
 ```
 python -m infra.db.reset_demo backup             # guarda o seed na tabela demo_seed
