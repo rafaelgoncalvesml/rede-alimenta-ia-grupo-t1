@@ -56,6 +56,7 @@ jobs:
           pip-audit -r api/requirements.txt
           pip-audit -r ml/requirements.txt
           pip-audit -r infra/db/requirements.txt
+          pip-audit -r app/requirements.txt
 
   imagem:
     name: Docker build e Trivy

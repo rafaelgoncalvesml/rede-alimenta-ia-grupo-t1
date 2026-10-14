@@ -1,6 +1,6 @@
 # Rede Alimenta IA
 
-Projeto integrador de Ciberseguranca e DevSecOps (FIAP, Tecnologo em Inteligencia Artificial). A API cadastra lotes de alimentos doados, classifica a prioridade de descarte com um modelo de IA e registra a doacao do lote para uma ONG. O matching por necessidade, capacidade e distancia existe como funcao em `ml/matching.py`, mas ainda nao esta ligado a uma rota da API (ver "O que ainda nao esta no repo").
+Projeto integrador de Ciberseguranca e DevSecOps (FIAP, Tecnologo em Inteligencia Artificial). A API cadastra lotes de alimentos doados, classifica a prioridade de descarte com um modelo de IA e registra a doacao do lote para uma ONG. O matching por necessidade, capacidade e distancia sai em `POST /matching/{lote_id}` e a tela em Streamlit (`app/`) usa essa rota.
 
 API publica: https://rede-alimenta-ia-api.onrender.com (Swagger em `/docs`). O servico esta no plano free e dorme sem trafego; ver "Producao".
 
@@ -17,7 +17,7 @@ Orientacao: Prof. M.Sc Oerton Fernandes.
 
 ```mermaid
 flowchart LR
-    U[Cliente: Swagger /docs hoje, Streamlit planejado] -->|HTTPS + JWT| CF[Cloudflare do Render]
+    U[Cliente: Streamlit em app/ ou Swagger /docs] -->|HTTPS + JWT| CF[Cloudflare do Render]
     CF --> API
     subgraph Container["Container Docker no Render (Python 3.12)"]
         API["FastAPI: api/main.py"]
@@ -45,7 +45,7 @@ Tabelas: `doadores`, `ongs`, `lotes`, `doacoes`, `usuarios` e `demo_seed` (copia
 - `api/`: backend FastAPI, testes em `api/tests/`
 - `ml/`: modelo de priorizacao e testes
 - `models/`: modelo treinado e `metrics.json`
-- `app/`: reservado ao frontend (hoje so `.gitkeep`)
+- `app/`: frontend em Streamlit (`dashboard.py`, `services/api_client.py`)
 - `infra/`: schema do banco, scripts de banco e o hello world do deploy de teste
 - `docs/`: decisoes tecnicas, checkpoints, auth, deploy, container e relatorios de seguranca
 - `data/`: dataset simulado, gerador, historico simulado e `seed_demo.json`
@@ -89,7 +89,7 @@ docker run -d --name rede-api -p 8000:8000 \
 
 `-e VAR` sem valor copia a variavel do shell, entao a senha do banco nao aparece no comando. Sem `STORAGE=postgres` a API sobe em memoria. A imagem usa Python 3.12, roda com um usuario sem root e traz um healthcheck em `/health`. O `.dockerignore` deixa o `.env` de fora.
 
-O `docker-compose.yml` sobe so a API (`docker compose up --build`, com `JWT_SECRET` no `.env`); o servico do Streamlit esta comentado ate o frontend existir. Ele so foi testado no job `compose` do CI, nao na maquina de ninguem. Medidas, o que foi e o que nao foi testado em `docs/container.md`; achados do Trivy em `docs/security/trivy-imagem.md`.
+O `docker-compose.yml` sobe so a API (`docker compose up --build`, com `JWT_SECRET` no `.env`); o servico do Streamlit continua comentado: o frontend ainda nao tem Dockerfile nem deploy. Ele so foi testado no job `compose` do CI, nao na maquina de ninguem. Medidas, o que foi e o que nao foi testado em `docs/container.md`; achados do Trivy em `docs/security/trivy-imagem.md`.
 
 ### Producao
 
@@ -165,8 +165,9 @@ pytest ml api
 ```
 
 Limites pra defesa: o modelo aprende a nossa formula, nao o mundo real, e ganha da regra simples por
-pouco (diferenca de -0,001 a +0,117 no F1, IC 95%). A rota `POST /matching/{lote_id}` ainda nao esta na
-API; a funcao esta pronta e o trecho da rota esta em `docs/matching.md`.
+pouco (diferenca de -0,001 a +0,117 no F1, IC 95%). O matching e uma regra (categoria, capacidade,
+distancia em linha reta), nao um modelo. A "data de hoje" do negocio e a de Brasilia (`ml/relogio.py`),
+nao a do servidor em UTC: depois das 21h um lote que vence hoje continua valido.
 
 ## Testes e qualidade
 
@@ -176,7 +177,7 @@ pytest ml
 ruff check .
 ```
 
-Em 14/10: 424 testes em `api` (29 deles de ataque, em `api/tests/test_seguranca.py`) e 63 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit das tres listas de dependencias, build e Trivy da imagem, `/health` do container e `docker compose`); passou nos tres jobs no GitHub em 14/10, depois de dois ajustes (`python -m pytest` e a tag da action do Trivy).
+Em 14/10: 436 testes em `api` (29 deles de ataque, em `api/tests/test_seguranca.py`) e 65 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit das quatro listas de dependencias, build e Trivy da imagem, `/health` do container e `docker compose`); passou nos tres jobs no GitHub em 14/10, depois de dois ajustes (`python -m pytest` e a tag da action do Trivy).
 
 ## Referencia da API
 
@@ -240,7 +241,7 @@ Prioridade: o `POST /lotes` chama `predict()` de `ml/predict.py` (contrato em `d
 
 ### Doacao
 
-`POST /doacoes` confirma o match. Corpo: `lote_id`, `ong_id` e, opcionais, `distancia_km` e `score` (informativos, o servidor nao recalcula). Status e timestamps sao sempre do servidor.
+`POST /doacoes` confirma o match. Corpo: `lote_id`, `ong_id` e, opcionais, `distancia_km` e `score` (ignorados: o servidor calcula os dois com a mesma funcao do `/matching`). Status e timestamps sao sempre do servidor.
 
 - Reserva o lote (`disponivel` -> `reservado`) e grava a doacao como `confirmada` no mesmo passo. Lote ou ONG que nao existe volta 404; lote que nao esta `disponivel` (inclusive confirmado por outro pedido ao mesmo tempo) volta 409. Tambem volta 409 se o lote passa da `capacidade_kg` da ONG ou se a categoria dele nao esta nas `necessidades` dela (lote sem `tipo` so confere a capacidade).
 - `confirmado_em` e `tempo_match_s` (confirmacao menos o `criado_em` do lote) ficam gravados: o tempo medio de match e um `avg(tempo_match_s)`.
@@ -291,10 +292,10 @@ O log de auditoria sai no stdout, uma linha JSON por pedido (`tipo: requisicao`:
 
 ## O que ainda nao esta no repo
 
-Conferido em 13/10 contra a `main` do GitHub:
+Conferido em 14/10:
 
-- Rota de matching (`POST /matching/{lote_id}`). A funcao `ml/matching.py` esta pronta e testada, e o trecho da rota esta em `docs/matching.md`. Hoje a ONG de cada doacao e escolhida por quem chama a API.
-- Frontend e dashboard: `app/` so tem `.gitkeep`. Sem eles a demo visual e o Swagger em `/docs`.
+- Frontend publicado: o Streamlit em `app/` roda local contra a API (sem Dockerfile nem URL publica). O CI so confere `ruff` e `pip-audit` nele; nao ha teste automatico da tela.
+- Dashboard: nao tem o bloco de seguranca (saude do pipeline, vulnerabilidades, security gates) nem mapa de calor, que o PDF do professor pede.
 - Teste do `docker compose up` na maquina de alguem: so o CI o rodou.
 - Protecao de branch na `main`: o plano free do GitHub nao oferece em repo privado.
 - Relatorio do Bandit em `docs/security/`. O CI guarda o resultado como artefato a cada execucao.
