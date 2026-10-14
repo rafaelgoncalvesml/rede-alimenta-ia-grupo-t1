@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# dump de linhas feito pelo infra/db/reset_demo.py antes de apagar (tem dado de cadastro)
+backups/

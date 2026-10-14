@@ -80,6 +80,14 @@ create table if not exists usuarios (
     )
 );
 
+-- Copia do seed da demo (data/seed_demo.json), guardada pelo infra/db/reset_demo.py. Serve pra
+-- recarregar a demo de uma maquina que nao tem o arquivo. Uma linha por versao do seed.
+create table if not exists demo_seed (
+    versao text primary key,
+    conteudo jsonb not null,
+    salvo_em timestamptz not null default now()
+);
+
 -- O Supabase expoe tabelas do schema public numa API REST propria (PostgREST).
 -- Com RLS ligado e sem policy, essa API nao le nem escreve nada. A nossa API
 -- conecta como o dono das tabelas (postgres), que ignora o RLS.
@@ -88,3 +96,4 @@ alter table ongs enable row level security;
 alter table lotes enable row level security;
 alter table doacoes enable row level security;
 alter table usuarios enable row level security;
+alter table demo_seed enable row level security;

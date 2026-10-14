@@ -1,10 +1,16 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
 
 from api import auditoria, erros, limites, seguranca
 from api.routers import auth, doacoes, doadores, kpis, lotes, ongs, usuarios
 from api.storage import PostgresStorage, get_storage
+
+# o .env tem que estar carregado antes do lifespan: ele valida o JWT_SECRET na subida, e o
+# get_storage (que tambem le o .env) so roda depois. No Render e no container nao ha .env
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 @asynccontextmanager
