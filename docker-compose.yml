@@ -1,0 +1,43 @@
+# Sobe tudo com um comando:  docker compose up --build
+#   API:       http://localhost:8000  (Swagger em /docs)
+#   Streamlit: http://localhost:8501
+#
+# Sem .env, a API roda com STORAGE=memory (dados somem ao reiniciar). Pra usar o Supabase:
+# copie .env.example para .env, preencha SUPABASE_DB_URL e rode com STORAGE=postgres.
+# Enquanto o frontend nao chegar na main (app/ so tem .gitkeep), use: docker compose up --build api
+# O .env fica fora do Git e fora das imagens: so entra no container como variavel de ambiente.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      STORAGE: ${STORAGE:-memory}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

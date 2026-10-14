@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/33392327/README.md)
 # Rede Alimenta IA
 
 Projeto integrador de Ciberseguranca e DevSecOps (FIAP, Tecnologo em Inteligencia Artificial). Sistema que cadastra lotes de alimentos doados, classifica a prioridade de descarte com um modelo de IA e faz o matching com ONGs por necessidade, capacidade e distancia.
@@ -123,7 +122,7 @@ em `tipo`. Se o doador ja mandou `tipo`, a IA nao reclassifica.
 
 - Entrada que o modelo recusa (`tipo` fora das 6 categorias, `descricao` em branco
   sem `tipo`) volta 422 com a mensagem do modelo e o lote nao e cadastrado.
-- Falha do modelo (arquivo `models/prioridade_v2.joblib` ausente, versao errada do
+- Falha do modelo (arquivo `models/prioridade_v1.joblib` ausente, versao errada do
   scikit-learn) ou saida fora de alta/media/baixa: o lote e cadastrado com
   `prioridade` e `tipo` nulos e o erro vai pro log. O doador nao perde o cadastro.
 - O `PUT` nao recalcula a prioridade.
@@ -189,43 +188,29 @@ path, status, ms, ip) e uma por mudanca de dado (`tipo: evento`: `lote.criado`,
 nao aparecem. Sem login ainda, "quem" e so o IP (atras do proxy do Render e o do proxy).
 Codigo em `api/erros.py` e `api/auditoria.py`.
 
-## Dados e IA
-
-**Tudo que e dado de lote e SIMULADO.** Nao achamos base aberta brasileira lote a lote (validade,
-armazenamento, destino); as bases publicas de desperdicio sao agregadas. Detalhes e premissas em
-`data/README.md`; numeros do modelo em `models/metrics.json`; decisoes em `docs/ia.md`.
-
-| Peca | Onde | O que faz |
-|---|---|---|
-| Dataset | `data/gerar_dataset_v0.py` -> `lotes_v0.csv` (1212 lotes) | Gerador com seed fixa. Rotulo `prioridade` por formula de urgencia (fracao da vida util **ou** prazo absoluto, o maior), frio, perecibilidade e quantidade, mais ruido |
-| Limpeza | `ml/limpeza.py` -> `lotes_v1.csv` (1083) | Tira duplicados, vencidos e lote sem armazenamento; corrige grama digitada como kg; preenche coordenada ausente com o centro da cidade |
-| Modelo | `ml/treinar.py` -> `models/prioridade_v2.joblib` | Random Forest. F1 macro 0,669 no teste contra 0,610 da regra so por dias; o lote urgente mandado pro fim da fila caiu pra 2,2% |
-| Categoria | mesmo pacote | Classifica a descricao numa das 6 categorias (acuracia 1,00, otimista: texto simulado) |
-| `predict()` | `ml/predict.py` | Chamado no `POST /lotes`. Contrato em `docs/ia.md`, secao 5 |
-| Matching | `ml/matching.py`, `ml/geo.py` | Filtra ONG por categoria e capacidade (a mesma regra da doacao), ordena por distancia (haversine) e devolve `score` = distancia / 100 km. ONG ou doador sem coordenada usa o centro da cidade e sai marcado `geo_aproximada`. Contrato em `docs/matching.md` |
-| KPIs | `api/kpis.py` | `kg doados / 0,5` = refeicoes. O 0,5 kg e **premissa**; a unica referencia achada (EUA) da 0,544 kg (`docs/kpis.md`) |
-| Historico | `data/gerar_historico_simulado.py` -> `historico_simulado.json` | 1083 lotes e 1090 doacoes **SIMULADAS** pro dashboard, no formato da API, com 12 ONGs inventadas |
-| Seed de demo | `api/seed_demo.py` | 4 ONGs **reais** (CNPJ ativo na Receita, coordenada do OpenStreetMap), 3 doadores e 5 lotes ficticios. Capacidade e necessidades das ONGs sao simuladas (`docs/seed-demo.md`) |
-
-O modelo carrega quando a API sobe, nao no primeiro lote; o log registra `modelo.carregado` com o
-tempo e o pico de memoria. Reproduzir tudo:
-
-```
-python data/gerar_dataset_v0.py
-python -m ml.limpeza
-python -m ml.treinar
-python -m data.gerar_historico_simulado
-pytest ml api
-```
-
-Limites pra defesa: o modelo aprende a nossa formula, nao o mundo real, e ganha da regra simples por
-pouco (diferenca de -0,001 a +0,117 no F1, IC 95%). A rota `POST /matching/{lote_id}` ainda nao esta na
-API; a funcao esta pronta e o trecho da rota esta em `docs/matching.md`.
-
 ## Deploy
 
 `render.yaml` sobe a API pela imagem Docker. Variaveis, passo a passo e riscos em
 `docs/deploy-render.md`; a lista completa esta em `.env.example`.
+
+## Docker
+
+```
+copy .env.example .env     # preencha JWT_SECRET (minimo 32 caracteres), ADMIN_EMAIL, ADMIN_PASSWORD
+docker compose up --build
+```
+
+A API sobe em http://127.0.0.1:8000 (Swagger em `/docs`) com Python 3.12 e usuario sem root.
+Sem `STORAGE=postgres` ela roda em memoria (os dados somem ao reiniciar). O `.env` fica fora do
+Git e fora das imagens. O frontend entra com `docker compose --profile frontend up --build`
+quando `app/` existir.
+
+## Seguranca e CI
+
+Pipeline em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit, Trivy, compose); qualquer
+falha quebra o PR. O deploy (`.github/workflows/deploy.yml`) so roda depois do CI verde na `main`.
+Rodar local: `python infra/security/run_sast.py`. Detalhes em `docs/security/README.md`, ameacas em
+`docs/stride.md`, dados pessoais em `docs/lgpd.md` e testes de ataque em `docs/security/testes.md`.
 
 ## Status
 
