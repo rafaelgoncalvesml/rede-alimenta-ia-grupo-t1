@@ -163,7 +163,7 @@ Nenhum teste falha e o Bandit nao achou nada. Os itens abaixo vem de ler o repo 
 | 6 | Trabalho dos dias 24 e 25 (reset da demo, README) estava so na maquina do Rafael | media | resolvido pelo PR dos dias 24 e 25 |
 | 7 | `KG_POR_REFEICAO = 0,5` e premissa; Charles achou uma referencia (EUA, 0,544 kg) em `docs/kpis.md`, ainda nao e fonte brasileira | media | Charles: dizer "premissa" na defesa |
 | 8 | Tetos de lote e de ONG (5000 kg, 100000 kg) sem aval do grupo | baixa | grupo |
-| 9 | Usuario do Atlas antigo segue no historico do git | media | Rafael: rotacionar no Atlas |
+| 9 | Usuario do Atlas antigo segue no historico do git | media | resolvido em 14/10: usuario apagado no Atlas, `MONGODB_URI` tirada do `.env` |
 | 10 | Modelo ganha do baseline por pouco (IC 95% encosta em zero) e todos os dados sao simulados | media na defesa | Charles: dizer antes que a banca pergunte |
 | 11 | Historico simulado tem 12 ONGs inventadas; seed de demo tem 4 reais com capacidade simulada | baixa | Charles: rotular na tela e no pitch |
 
