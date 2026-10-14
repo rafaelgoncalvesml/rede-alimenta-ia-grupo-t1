@@ -1,0 +1,38 @@
+{
+  "versao": "demo-v1",
+  "aviso": "Dados SIMULADOS pra demo. Nenhum doador, ONG ou lote aqui existe. Validade em dias a partir do dia do reset, pra o lote nunca nascer vencido.",
+  "doadores": [
+    {"nome": "Mercado Bom Preco (DEMO)", "tipo_pessoa": "juridica", "documento": "11222333000181",
+     "cidade": "Sao Paulo", "estado": "SP", "latitude": -23.5505, "longitude": -46.6333},
+    {"nome": "Padaria Pao Dourado (DEMO)", "tipo_pessoa": "juridica", "documento": "55666777000103",
+     "cidade": "Sao Paulo", "estado": "SP", "latitude": -23.5329, "longitude": -46.6395},
+    {"nome": "Hortifruti Sao Jorge (DEMO)", "tipo_pessoa": "juridica", "documento": "66777888000104",
+     "cidade": "Guarulhos", "estado": "SP", "latitude": -23.4538, "longitude": -46.5333}
+  ],
+  "ongs": [
+    {"nome": "ONG Mesa Cheia (DEMO)", "cnpj": "44555666000102", "endereco": "Rua Exemplo, 100",
+     "cidade": "Sao Paulo", "estado": "SP", "latitude": -23.5614, "longitude": -46.6559,
+     "capacidade_kg": 500, "necessidades": ["hortifruti", "padaria"]},
+    {"nome": "Casa do Pao Quente (DEMO)", "cnpj": "77888999000105", "endereco": "Rua Modelo, 45",
+     "cidade": "Sao Paulo", "estado": "SP", "latitude": -23.5880, "longitude": -46.6320,
+     "capacidade_kg": 300, "necessidades": ["padaria", "preparados"]},
+    {"nome": "Banco de Alimentos Zona Leste (DEMO)", "cnpj": "88999000000106", "endereco": "Av. Teste, 2000",
+     "cidade": "Sao Paulo", "estado": "SP", "latitude": -23.5430, "longitude": -46.4780,
+     "capacidade_kg": 1500, "necessidades": ["laticinios", "carnes_peixes", "nao_pereciveis"]},
+    {"nome": "Cozinha Solidaria Vila Maria (DEMO)", "cnpj": "99000111000107", "endereco": "Rua Ficticia, 12",
+     "cidade": "Sao Paulo", "estado": "SP", "latitude": -23.5105, "longitude": -46.5880,
+     "capacidade_kg": 200, "necessidades": ["hortifruti", "preparados"]}
+  ],
+  "lotes": [
+    {"doador": "Mercado Bom Preco (DEMO)", "descricao": "iogurte natural", "quantidade_kg": 40,
+     "validade_em_dias": 3, "armazenamento": "refrigerado"},
+    {"doador": "Hortifruti Sao Jorge (DEMO)", "descricao": "alface crespa", "quantidade_kg": 12.5,
+     "validade_em_dias": 1, "armazenamento": "refrigerado"},
+    {"doador": "Padaria Pao Dourado (DEMO)", "descricao": "pao frances", "quantidade_kg": 25,
+     "validade_em_dias": 1, "armazenamento": "ambiente"},
+    {"doador": "Mercado Bom Preco (DEMO)", "descricao": "arroz integral", "quantidade_kg": 80,
+     "validade_em_dias": 120, "armazenamento": "ambiente"},
+    {"doador": "Hortifruti Sao Jorge (DEMO)", "descricao": "tomate", "quantidade_kg": 30,
+     "validade_em_dias": 2, "armazenamento": "refrigerado"}
+  ]
+}

@@ -10,7 +10,7 @@ ajusta. Os numeros sao os do repo em 13/10.
 - Abrir `/health` da URL publica 10 minutos antes e fazer um `POST /lotes` de aquecimento. Sem isso o
   primeiro pedido leva ~22 s e o primeiro lote ~10 s.
 - Deixar o banco no estado da demo (5 lotes, 3 doadores, 4 ONGs). O script depende da decisao do grupo
-  em 14/10: `infra/db/reset_demo.py` (Rafael, ainda fora da `main`) ou `api/seed_demo.py` (Charles).
+  em 14/10: `infra/db/reset_demo.py` (Rafael) ou `api/seed_demo.py` (Charles).
 - Login de admin ja feito no Swagger (`Authorize`) e aba aberta em `/docs`.
 
 ## 1. Problema (Gustavo, 1 min)
@@ -21,7 +21,7 @@ o que vai vencer. Um slide so, sem numero de fonte que o grupo nao tenha conferi
 ## 2. Solucao (Gustavo, 1 min 30 s)
 
 O doador cadastra o lote, a IA diz o que e urgente, a doacao e confirmada para uma ONG e o impacto
-aparece em KPIs. Mostrar o diagrama de arquitetura (hoje so no README da branch do Rafael).
+aparece em KPIs. Mostrar o diagrama de arquitetura (secao Arquitetura do README).
 
 Hoje a ONG de cada doacao e escolhida por quem chama a API. A funcao de matching existe, mas nao
 esta ligada a uma rota (issue #8). Ajustar este trecho conforme a decisao de 14/10.

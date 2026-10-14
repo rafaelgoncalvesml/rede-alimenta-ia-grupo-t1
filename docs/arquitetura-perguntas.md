@@ -17,7 +17,7 @@ doador, ONG, lote e doacao se ligam por chave estrangeira, e o banco recusa lote
 nao existe ou doacao de lote apagado. Em Mongo isso virava codigo nosso. Esta em
 `docs/db-comparacao.md` e `docs/decisoes.md`.
 O Supabase free pausa o projeto depois de 1 semana sem uso e nao tem backup automatico. O
-`reset_demo.py` (branch do Rafael) guarda o estado antes de apagar.
+`reset_demo.py` guarda o estado antes de apagar.
 
 ## Por que o RLS esta ligado e sem policy?
 
@@ -85,7 +85,7 @@ servico local de banco porque o banco e o Supabase.
 ## Como o sistema trata dado pessoal (LGPD)?
 
 Guarda CPF/CNPJ, e-mail e telefone de doadores. O log de auditoria nao grava corpo nem
-querystring, a API devolve erro sem eco do valor recebido, e o backup do reset (branch do Rafael) sai sem o hash de
+querystring, a API devolve erro sem eco do valor recebido, e o backup do reset sai sem o hash de
 senha. O mapeamento esta em `docs/lgpd.md` (dados, terceiros, base legal proposta, direitos do titular,
 lacunas). E rascunho sem revisao juridica: falar em "mapeamento", nao em "conformidade". A lacuna
 mais clara e que doador com doacao registrada nao pode ser apagado pela API.

@@ -36,8 +36,9 @@ Alguns pontos sobre esses dados:
   `test_auditoria_registra_o_pedido_sem_dado_pessoal` em `api/tests/test_erros.py`).
 - As ONGs guardam CNPJ, nome, endereco e capacidade: dado de pessoa juridica. Se uma ONG cadastrar
   e-mail de uma pessoa como login, ele entra na linha da tabela acima.
-- O backup que o script de reset gera (`infra/db/reset_demo.py`, ainda na branch do Rafael) sai
-  sem o hash de senha e fica em `backups/`, fora do git. Na `main` de hoje esse script nao existe.
+- O backup que o script de reset gera (`infra/db/reset_demo.py`) sai sem o hash de senha e fica
+  em `backups/`, fora do git. O arquivo guarda nome, documento e contato dos cadastros que existiam no
+  banco, entao nao deve sair da maquina de quem rodou.
 
 ## 2. Quem mais toca nesses dados
 

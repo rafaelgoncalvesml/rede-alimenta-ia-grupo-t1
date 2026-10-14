@@ -3,18 +3,13 @@
 A entrega e a defesa foram adiantadas pra 15/10. Este arquivo cruza cada entregavel do PDF do
 professor com o que existe no repo hoje.
 
-Existem duas versoes do repo e elas nao batem:
+Hoje (13/10) o usuario `CharlotteDxD` (Charles) subiu 47 commits direto na `main`, pela interface
+web ("Add files via upload" e "Delete ..."). Entraram matching, modelo v2, historico simulado,
+`seed_demo.py` e docs. Os numeros da secao abaixo vem de um clone limpo dessa `main` (commit
+`8cc4be4`), antes dos PRs de CI/LGPD e dos dias 24 e 25 (reset da demo e README completo, que
+depende do primeiro).
 
-- A `main` do GitHub (`origin/main`, commit `8cc4be4`). Hoje (13/10) o usuario `CharlotteDxD`
-  (Charles) subiu 47 commits direto nela, pela interface web ("Add files via upload" e "Delete ...").
-  Entraram matching, modelo v2, historico simulado, `seed_demo.py` e docs. A secao abaixo descreve
-  um clone limpo dessa `main`.
-- A branch local do Rafael (`feat/dia24-25-reset-demo-readme`), que parte da `main` de ontem e tem
-  mudancas nao commitadas (README, `api/main.py`, `schema.sql`, `reset_demo.py`,
-  `data/seed_demo.json`). Ela nao tem nada do que Charles subiu e mexe nos mesmos arquivos
-  (`README.md`, `api/main.py`), entao vai dar conflito ao juntar.
-
-O Render roda a versao de antes das duas (o deploy e manual).
+O Render roda a versao de antes de tudo isso (o deploy e manual).
 
 ## O que rodou agora
 
@@ -42,7 +37,7 @@ rodaram no Python 3.14. O `docker build` e o Trivy so rodaram no CI do GitHub (s
 | Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo | nao ha tela: o impacto so aparece em JSON e no Swagger |
 | Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade) | dados 100% simulados; a rota `POST /matching/{lote_id}` nao existe, so a funcao; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
 | DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render; nesta branch: `ci.yml`, `docs/lgpd.md`, `docs/stride.md` | sem docker-compose; sem protecao de branch na `main` (o workflow passou no GitHub em 14/10) |
-| Engenharia e defesa (20%) | codigo, README, pitch | README, 455 testes, docs por tema | o README da `main` e o da semana 3 (sem a parte de producao, reset e variaveis, que esta na branch local do Rafael); roteiro do pitch e rascunho |
+| Engenharia e defesa (20%) | codigo, README, pitch | README, 455 testes, docs por tema | o README da `main` de 13/10 era o da semana 3 (sem producao, reset e variaveis); o PR dos dias 24 e 25 traz a versao completa; roteiro do pitch e rascunho |
 
 Checkpoint 3 do PDF (URL publica, banco em nuvem, README, pitch): URL e banco estao no ar, o README
 existe mas esta desatualizado na `main`, e o pitch e rascunho.
@@ -63,9 +58,8 @@ existe mas esta desatualizado na `main`, e o pitch e rascunho.
 Com o congelamento valendo, e escolher entre fazer e declarar como "nao entrou". Do menor custo
 pro maior:
 
-1. Juntar o trabalho do Rafael com a `main` (README e `api/main.py` conflitam; o `seed_demo.py` de
-   Charles e o `reset_demo.py` com `seed_demo.json` do Rafael fazem coisas parecidas). Decidir
-   qual seed fica.
+1. Decidir qual seed vai pra defesa: o `seed_demo.py` de Charles (4 ONGs reais, pela API) ou o
+   `reset_demo.py` com `seed_demo.json` do Rafael (reset completo do banco). Os dois coexistem hoje.
 2. Limpar a `main`: `.ruff_cache/` e a linha solta do README. Feito neste PR.
 3. `docs/lgpd.md` e `docs/stride.md`: feitos neste PR como rascunho. Anthony le e corrige.
 4. Relatorio Bandit: o job do CI guarda `bandit.txt` como artefato a cada execucao. Falta copiar um
@@ -83,7 +77,7 @@ Os itens 2 a 6 nao sao feature de produto e cabem no congelamento.
 
 ## O que este PR muda
 
-Branch `chore/lgpd-ci-ajustes`, criada de `origin/main`, sem tocar na branch local do Rafael.
+Branch `chore/lgpd-ci-ajustes`, criada de `origin/main`.
 
 | Mudanca | Arquivo |
 |---|---|
@@ -112,7 +106,7 @@ Nenhum teste falha e o Bandit nao achou nada. Os itens abaixo vem de ler o repo 
 | 3 | Producao roda o modelo v1; a `main` apagou `prioridade_v1.joblib` e tem so o v2. Deploy manual: quem apertar o botao muda o modelo (e as metricas) em producao | alta se redeploy for feito sem teste | Rafael: redeployar na quarta, nao na quinta de manha, e rodar `testar_producao.py` |
 | 4 | Cold start de 22 s e primeiro lote de 10 s no Render free. A `main` agora carrega o modelo na subida (`pre_carregar_modelo`), o que deve tirar os 10 s do primeiro lote; nao medi em producao | alta na defesa | Rafael: medir depois do redeploy |
 | 5 | Variaveis do Render (`SUPABASE_DB_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`) ja sumiram uma vez num deploy; `/health` nao detecta | alta | Rafael: `/health/db` e login depois de cada deploy |
-| 6 | Branch local com mudancas nao commitadas que conflitam com a `main` | media | Rafael |
+| 6 | Trabalho dos dias 24 e 25 (reset da demo, README) estava so na maquina do Rafael | media | resolvido pelo PR dos dias 24 e 25 |
 | 7 | `KG_POR_REFEICAO = 0,5` e premissa; Charles achou uma referencia (EUA, 0,544 kg) em `docs/kpis.md`, ainda nao e fonte brasileira | media | Charles: dizer "premissa" na defesa |
 | 8 | Tetos de lote e de ONG (5000 kg, 100000 kg) sem aval do grupo | baixa | grupo |
 | 9 | Usuario do Atlas antigo segue no historico do git | media | Rafael: rotacionar no Atlas |
