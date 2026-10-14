@@ -85,13 +85,23 @@ INICIO = date(2026, 6, 1)
 JANELA_DIAS = 112  # ate 20/09/2026
 
 
+# PREMISSA (13/10): dias que uma doacao leva entre o cadastro e chegar ao prato (achar ONG, coletar,
+# entregar, servir). Abaixo disso o lote fica urgente pelo prazo, qualquer que seja a vida util.
+PRAZO_LOGISTICO_DIAS = 4
+
+
 def escolher(rng, pesos: dict):
     return rng.choices(list(pesos), weights=list(pesos.values()))[0]
 
 
 def prioridade(categoria, armazenamento, dias, vida_total, qtd, rng) -> str:
     perecivel = CATEGORIAS[categoria][0]
-    urgencia = 1.0 - min(max(dias / vida_total, 0.0), 1.0)
+    # urgencia = o maior entre a fracao da vida util ja gasta e o prazo absoluto. So a fracao (rotulo
+    # ate 12/10) deixava "baixa" a marmita que vence amanha quando ela era recem-feita, mas pra doar o
+    # que pesa e quanto tempo sobra pra achar ONG, coletar e entregar (docs/ia.md, secao 6)
+    relativa = 1.0 - min(max(dias / vida_total, 0.0), 1.0)
+    absoluta = 1.0 - min(max(dias / PRAZO_LOGISTICO_DIAS, 0.0), 1.0)
+    urgencia = max(relativa, absoluta)
     fora_do_frio = FRIO[armazenamento] < FRIO_MINIMO.get(categoria, 0)
     score = (0.55 * urgencia + 0.20 * perecivel + 0.15 * fora_do_frio
              + 0.10 * min(qtd / 200, 1.0) + rng.gauss(0, 0.08))

@@ -50,12 +50,12 @@ armazenamento     34  2.8
 
 ```
 prioridade
-alta     451
-media    401
-baixa    360
+alta     526
+media    409
+baixa    277
 ```
 
-Razao maior/menor classe: 1.25. Desbalanceamento leve, da pra usar split estratificado sem reamostragem.
+Razao maior/menor classe: 1.90. Desbalanceamento leve, da pra usar split estratificado sem reamostragem.
 
 ### Categoria e perecibilidade
 
@@ -139,12 +139,12 @@ preparados           1        20         12           77
 ```
 prioridade      alta  media  baixa
 categoria                         
-carnes_peixes   46.2   31.4   22.4
-hortifruti      43.9   32.0   24.1
-laticinios      44.7   36.0   19.3
+carnes_peixes   51.9   35.3   12.8
+hortifruti      44.9   31.5   23.6
+laticinios      49.3   32.7   18.0
 nao_pereciveis   6.6   40.3   53.1
-padaria         40.3   29.1   30.6
-preparados      39.1   30.0   30.9
+padaria         54.9   34.0   11.2
+preparados      61.8   29.1    9.1
 ```
 
 ## 9. O que vai pra limpeza (dataset v1, dia 5)

@@ -1,6 +1,6 @@
 # Rede Alimenta IA
 
-Projeto integrador de Ciberseguranca e DevSecOps (FIAP, Tecnologo em Inteligencia Artificial). A API cadastra lotes de alimentos doados, classifica a prioridade de descarte com um modelo de IA e registra a doacao do lote para uma ONG. O matching automatico por necessidade, capacidade e distancia esta planejado e ainda nao existe (ver "O que ainda nao esta no repo").
+Projeto integrador de Ciberseguranca e DevSecOps (FIAP, Tecnologo em Inteligencia Artificial). A API cadastra lotes de alimentos doados, classifica a prioridade de descarte com um modelo de IA e registra a doacao do lote para uma ONG. O matching por necessidade, capacidade e distancia existe como funcao em `ml/matching.py`, mas ainda nao esta ligado a uma rota da API (ver "O que ainda nao esta no repo").
 
 API publica: https://rede-alimenta-ia-api.onrender.com (Swagger em `/docs`). O servico esta no plano free e dorme sem trafego; ver "Producao".
 
@@ -23,7 +23,7 @@ flowchart LR
         API["FastAPI: api/main.py"]
         API --> SEG["auth, papeis, limite de pedidos, auditoria"]
         API --> IA["api/ia.py -> ml/predict.py"]
-        IA --> M[(models/prioridade_v1.joblib)]
+        IA --> M[(models/prioridade_v2.joblib)]
     end
     API -->|psycopg, session pooler| DB[(Postgres no Supabase)]
 ```
@@ -48,7 +48,8 @@ Tabelas: `doadores`, `ongs`, `lotes`, `doacoes`, `usuarios` e `demo_seed` (copia
 - `app/`: reservado ao frontend (hoje so `.gitkeep`)
 - `infra/`: schema do banco, scripts de banco e o hello world do deploy de teste
 - `docs/`: decisoes tecnicas, checkpoints, auth, deploy, container e relatorios de seguranca
-- `data/`: dataset simulado, gerador e `seed_demo.json`
+- `data/`: dataset simulado, gerador, historico simulado e `seed_demo.json`
+- `.github/workflows/`: pipeline de CI
 
 ## Como rodar
 
@@ -121,7 +122,7 @@ A lista completa, com placeholders, esta em `.env.example`. O `.env` fica fora d
 
 ## Reset da demo
 
-`infra/db/reset_demo.py` devolve o banco em nuvem ao estado inicial da demo. O seed fica em `data/seed_demo.json`: 3 doadores, 4 ONGs e 5 lotes, todos marcados `(DEMO)` e simulados. A validade dos lotes e contada em dias a partir do dia do reset, entao nenhum lote nasce vencido. O arquivo foi escrito pelo Rafael pra destravar o script; o seed do Charles nao chegou ao repo e pode substitui-lo.
+`infra/db/reset_demo.py` devolve o banco em nuvem ao estado inicial da demo. O seed fica em `data/seed_demo.json`: 3 doadores, 4 ONGs e 5 lotes, todos marcados `(DEMO)` e simulados. A validade dos lotes e contada em dias a partir do dia do reset, entao nenhum lote nasce vencido. O arquivo foi escrito pelo Rafael pra destravar o script. Charles escreveu outro seed, `api/seed_demo.py` (4 ONGs reais, `docs/seed-demo.md`); os dois coexistem e o grupo ainda nao decidiu qual vai pra defesa.
 
 ```
 python -m infra.db.reset_demo backup             # guarda o seed na tabela demo_seed
@@ -134,6 +135,39 @@ O reset apaga doacoes, lotes, doadores, ONGs e usuarios que nao sejam admin, zer
 
 Nao rode `api.fluxo_http` contra a URL publica: ele cria doacoes, que nao tem DELETE na API e ficam no banco de producao. Se rodar, o reset limpa.
 
+## Dados e IA
+
+**Tudo que e dado de lote e SIMULADO.** Nao achamos base aberta brasileira lote a lote (validade,
+armazenamento, destino); as bases publicas de desperdicio sao agregadas. Detalhes e premissas em
+`data/README.md`; numeros do modelo em `models/metrics.json`; decisoes em `docs/ia.md`.
+
+| Peca | Onde | O que faz |
+|---|---|---|
+| Dataset | `data/gerar_dataset_v0.py` -> `lotes_v0.csv` (1212 lotes) | Gerador com seed fixa. Rotulo `prioridade` por formula de urgencia (fracao da vida util **ou** prazo absoluto, o maior), frio, perecibilidade e quantidade, mais ruido |
+| Limpeza | `ml/limpeza.py` -> `lotes_v1.csv` (1083) | Tira duplicados, vencidos e lote sem armazenamento; corrige grama digitada como kg; preenche coordenada ausente com o centro da cidade |
+| Modelo | `ml/treinar.py` -> `models/prioridade_v2.joblib` | Random Forest. F1 macro 0,669 no teste contra 0,610 da regra so por dias; o lote urgente mandado pro fim da fila caiu pra 2,2% |
+| Categoria | mesmo pacote | Classifica a descricao numa das 6 categorias (acuracia 1,00, otimista: texto simulado) |
+| `predict()` | `ml/predict.py` | Chamado no `POST /lotes`. Contrato em `docs/ia.md`, secao 5 |
+| Matching | `ml/matching.py`, `ml/geo.py` | Filtra ONG por categoria e capacidade (a mesma regra da doacao), ordena por distancia (haversine) e devolve `score` = distancia / 100 km. ONG ou doador sem coordenada usa o centro da cidade e sai marcado `geo_aproximada`. Contrato em `docs/matching.md` |
+| KPIs | `api/kpis.py` | `kg doados / 0,5` = refeicoes. O 0,5 kg e **premissa**; a unica referencia achada (EUA) da 0,544 kg (`docs/kpis.md`) |
+| Historico | `data/gerar_historico_simulado.py` -> `historico_simulado.json` | 1083 lotes e 1090 doacoes **SIMULADAS** pro dashboard, no formato da API, com 12 ONGs inventadas |
+| Seed de demo | `api/seed_demo.py` | 4 ONGs **reais** (CNPJ ativo na Receita, coordenada do OpenStreetMap), 3 doadores e 5 lotes ficticios. Capacidade e necessidades das ONGs sao simuladas (`docs/seed-demo.md`) |
+
+O modelo carrega quando a API sobe, nao no primeiro lote; o log registra `modelo.carregado` com o
+tempo e o pico de memoria. Reproduzir tudo:
+
+```
+python data/gerar_dataset_v0.py
+python -m ml.limpeza
+python -m ml.treinar
+python -m data.gerar_historico_simulado
+pytest ml api
+```
+
+Limites pra defesa: o modelo aprende a nossa formula, nao o mundo real, e ganha da regra simples por
+pouco (diferenca de -0,001 a +0,117 no F1, IC 95%). A rota `POST /matching/{lote_id}` ainda nao esta na
+API; a funcao esta pronta e o trecho da rota esta em `docs/matching.md`.
+
 ## Testes e qualidade
 
 ```
@@ -142,7 +176,7 @@ pytest ml
 ruff check .
 ```
 
-Em 12/10: 368 testes em `api` e 47 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). Nao ha pipeline de CI no repo.
+Em 13/10: 395 testes em `api` e 63 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit, build e Trivy da imagem, `/health` do container); ele ainda nao rodou no GitHub, entao confira a aba Actions.
 
 ## Referencia da API
 
@@ -201,7 +235,7 @@ Lote:
 Prioridade: o `POST /lotes` chama `predict()` de `ml/predict.py` (contrato em `docs/ia.md`, secao 5) e grava `prioridade` (`alta`, `media` ou `baixa`) e a categoria em `tipo`. Se o doador ja mandou `tipo`, a IA nao reclassifica.
 
 - Entrada que o modelo recusa (`tipo` fora das 6 categorias, `descricao` em branco sem `tipo`) volta 422 com a mensagem do modelo e o lote nao e cadastrado.
-- Falha do modelo (arquivo `models/prioridade_v1.joblib` ausente, versao errada do scikit-learn) ou saida fora de alta/media/baixa: o lote e cadastrado com `prioridade` e `tipo` nulos e o erro vai pro log. O doador nao perde o cadastro.
+- Falha do modelo (arquivo `models/prioridade_v2.joblib` ausente, versao errada do scikit-learn) ou saida fora de alta/media/baixa: o lote e cadastrado com `prioridade` e `tipo` nulos e o erro vai pro log. O doador nao perde o cadastro.
 - O `PUT` nao recalcula a prioridade.
 
 ### Doacao
@@ -248,19 +282,22 @@ O log de auditoria sai no stdout, uma linha JSON por pedido (`tipo: requisicao`:
 | `docs/container.md` | imagem Docker, medidas e o que nao foi testado |
 | `docs/deploy-render.md` | deploy, cold start, IP do cliente atras do Render |
 | `docs/security/trivy-imagem.md` | Trivy na imagem e no repo |
+| `docs/lgpd.md`, `docs/stride.md` | dados pessoais e matriz de ameacas (rascunhos, sem revisao) |
+| `docs/matching.md`, `docs/seed-demo.md` | matching e seed de demo com ONGs reais |
+| `docs/checkpoint-rubrica.md`, `docs/pitch-roteiro.md`, `docs/arquitetura-perguntas.md` | preparo da defesa |
 | `docs/db-comparacao.md`, `docs/deploy-comparacao.md` | comparacoes que levaram ao Supabase e ao Render |
 | `docs/checkpoint-*.md` | o que fechou e o que nao esta no repo, por semana |
 
 ## O que ainda nao esta no repo
 
-Conferido contra o repositorio em 12/10 (`docs/checkpoint-dia23.md`):
+Conferido em 13/10 contra a `main` do GitHub:
 
-- Matching (`ml/matching.py` e `POST /matching`). Hoje a ONG de cada doacao e escolhida por quem chama a API. O limite de pedidos do matching ja esta pronto, esperando a rota.
+- Rota de matching (`POST /matching/{lote_id}`). A funcao `ml/matching.py` esta pronta e testada, e o trecho da rota esta em `docs/matching.md`. Hoje a ONG de cada doacao e escolhida por quem chama a API.
 - Frontend e dashboard: `app/` so tem `.gitkeep`. Sem eles a demo visual e o Swagger em `/docs`.
-- Pipeline de CI e `docker-compose.yml`.
-- `docs/lgpd.md` e o relatorio do Bandit em `docs/security/`.
-- Seed de demo do Charles. O `data/seed_demo.json` atual e provisorio.
+- `docker-compose.yml`.
+- Relatorio do Bandit em `docs/security/`. O CI guarda o resultado como artefato a cada execucao.
+- Revisao de `docs/lgpd.md` e `docs/stride.md`, que sao rascunhos.
 
 ## Status
 
-Semana 4, dias 24 e 25: reset da demo e README. Ver `docs/checkpoint-dia23.md` pro estado da producao.
+Semana 4, dias 24 e 25: reset da demo e README. Ver `docs/checkpoint-dia23.md` pro estado da producao e `docs/checkpoint-rubrica.md` pra comparacao com a rubrica.

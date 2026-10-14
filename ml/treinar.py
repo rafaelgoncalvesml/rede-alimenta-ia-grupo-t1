@@ -1,7 +1,7 @@
 """
 Treina o baseline, a regressao logistica e o Random Forest de prioridade, escolhe entre os dois
 modelos por validacao cruzada no treino e mede tudo uma unica vez no teste. Treina tambem o
-classificador de categoria (a partir da descricao). Grava models/prioridade_v1.joblib e
+classificador de categoria (a partir da descricao). Grava models/prioridade_v2.joblib e
 models/metrics.json. Rodar da raiz do repo:
     python -m ml.treinar
 
@@ -30,7 +30,7 @@ from ml.predict import MODELO
 RAIZ = Path(__file__).resolve().parents[1]
 METRICAS = RAIZ / "models" / "metrics.json"
 
-VERSAO = "v1"
+VERSAO = "v2"
 SEED = 42
 TAMANHO_TESTE = 0.2
 DOBRAS_CV = 5

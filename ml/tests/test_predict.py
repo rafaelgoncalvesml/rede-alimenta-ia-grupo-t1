@@ -115,6 +115,18 @@ def test_lote_perecivel_que_vence_amanha_e_alta_e_arroz_com_meses_de_validade_e_
     assert tranquilo["prioridade"] == "baixa" and tranquilo["perecivel"] is False
 
 
+@pytest.mark.parametrize("descricao, tipo, armazenamento", [
+    ("marmitas prontas de arroz e feijao", "preparados", "refrigerado"),
+    ("pao frances do dia", "padaria", "ambiente"),
+])
+def test_perecivel_de_vida_curta_que_vence_amanha_e_alta(modelo, descricao, tipo, armazenamento):
+    # o prazo absoluto pesa: falta 1 dia pra achar ONG, coletar e entregar (rotulo revisto em 13/10)
+    saida = predict(entrada(descricao=descricao, tipo=tipo, armazenamento=armazenamento, quantidade_kg=30,
+                            validade=HOJE + timedelta(days=1)), hoje=HOJE, modelo=modelo)
+
+    assert saida["prioridade"] == "alta"
+
+
 def test_perecivel_fora_do_frio_e_sinalizado_e_com_mais_dias_a_chance_de_alta_cai(modelo):
     quente = predict(entrada(descricao="leite pasteurizado", armazenamento="ambiente"), hoje=HOJE, modelo=modelo)
     frio = predict(entrada(descricao="leite pasteurizado", armazenamento="refrigerado"), hoje=HOJE, modelo=modelo)
@@ -130,7 +142,7 @@ def test_sem_passar_modelo_carrega_o_artefato_versionado_em_models():
     saida = predict(entrada(), hoje=HOJE)
 
     assert set(saida) == CHAVES
-    assert saida["modelo_versao"] == "v1"
+    assert saida["modelo_versao"] == "v2"
 
 
 def test_contrato_de_saida_tem_as_chaves_e_so_valores_permitidos(modelo):
@@ -143,4 +155,4 @@ def test_contrato_de_saida_tem_as_chaves_e_so_valores_permitidos(modelo):
     assert sum(saida["probabilidades"].values()) == pytest.approx(1.0, abs=1e-6)
     assert saida["probabilidades"][saida["prioridade"]] == max(saida["probabilidades"].values())
     assert saida["dias_ate_validade"] == 3
-    assert saida["modelo_versao"] == "v1"
+    assert saida["modelo_versao"] == "v2"

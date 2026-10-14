@@ -48,7 +48,9 @@ O dataset pode ficar publico no repo sem questao de LGPD.
 ## Como o rotulo `prioridade` e gerado
 
 ```
-urgencia     = 1 - (dias ate a validade / vida util total), limitado entre 0 e 1
+relativa     = 1 - (dias ate a validade / vida util total), limitado entre 0 e 1
+absoluta     = 1 - (dias ate a validade / 4), limitado entre 0 e 1
+urgencia     = maior entre relativa e absoluta
 fora_do_frio = 1 se a categoria exige frio (laticinios, carnes_peixes, preparados)
                e o lote esta em ambiente, senao 0
 score = 0.55*urgencia + 0.20*perecivel + 0.15*fora_do_frio
@@ -57,11 +59,14 @@ score = 0.55*urgencia + 0.20*perecivel + 0.15*fora_do_frio
 alta se score >= 0.60, media se >= 0.38, baixa no resto
 ```
 
-Os pesos sao premissa do grupo, nao vem de estudo. O ruido existe pra que nenhuma
-regra simples acerte tudo: so olhando os dias ate a validade, a melhor regra de
-corte (alta ate 0 dias, media ate 5) acerta cerca de 58% no v0 inteiro. Esse numero estava inflado
-pelos lotes vencidos (a regra acerta 75% neles) que a limpeza remove: no v1 o piso e ~56%
-(ver `docs/ia.md`).
+Os pesos e o prazo de 4 dias (`PRAZO_LOGISTICO_DIAS`: cadastro, achar ONG, coletar, entregar) sao
+premissa do grupo, nao vem de estudo. **O termo `absoluta` entrou em 13/10** (rotulo v2): antes so
+existia a fracao da vida util, e uma marmita recem-feita que vence amanha saia `baixa`. A mudanca
+alterou 128 de 1212 rotulos, todos pra cima; o resto do CSV e identico (mesma seed). Motivo e
+efeito no modelo em `docs/ia.md`, secao 4.
+
+O ruido existe pra que nenhuma regra simples acerte tudo: so olhando os dias ate a validade, a
+melhor regra de corte (alta ate 1 dia, media ate 5) acerta 62,7% no teste do v1 (`models/metrics.json`).
 
 ## Ruido injetado de proposito
 
@@ -84,6 +89,17 @@ python data/gerar_dataset_v0.py
 ```
 
 So usa a biblioteca padrao. A seed e fixa, entao o CSV sai identico.
+
+## Historico simulado (`historico_simulado.json`)
+
+Pra alimentar o dashboard (dia 16). **Tudo SIMULADO**, cada linha leva `origem: "SIMULADO"` e as
+premissas ficam na chave `premissas` do arquivo. `python -m data.gerar_historico_simulado` gera: parte dos
+1083 lotes do v1, usa o `ml.matching` pra escolher a ONG e descarta o lote se nao ha ONG possivel
+ou se o tempo de match estoura a validade. 12 ONGs inventadas (2 por cidade), nenhuma real. Mesmo
+formato da API (`lotes`, `doacoes`, `ongs`): `api.kpis.calcula_impacto` calcula em cima, via
+`carregar_historico()`. Saida atual: 1037 doados, 17 reservados, 29 descartados, 1054 doacoes
+confirmadas. **Os numeros saem das premissas, nao de dado**: a taxa de doacao de ~96% e otimista
+(premissas simples) e nao pode ir pro pitch como resultado.
 
 ## Dataset v1 (`lotes_v1.csv`)
 

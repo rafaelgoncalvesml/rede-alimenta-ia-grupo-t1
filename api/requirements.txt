@@ -4,7 +4,7 @@ psycopg[binary,pool]==3.3.6
 python-dotenv==1.2.3
 PyJWT==2.15.1
 argon2-cffi==25.1.0
-# ml/predict.py (prioridade do lote). models/prioridade_v1.joblib so carrega na mesma versao do
+# ml/predict.py (prioridade do lote). models/prioridade_v2.joblib so carrega na mesma versao do
 # scikit-learn que o treinou: mudou aqui, roda `python -m ml.treinar` de novo e commita o artefato.
 # scikit-learn 1.8 e pandas 3 exigem Python 3.11+: o Render/Dockerfile nao pode usar 3.10.
 scikit-learn==1.8.0

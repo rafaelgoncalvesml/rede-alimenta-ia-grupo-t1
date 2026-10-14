@@ -30,7 +30,7 @@ def predict_falso(monkeypatch, fn):
     monkeypatch.setattr(ia, "predict", fn)
 
 
-# com o modelo de verdade (models/prioridade_v1.joblib)
+# com o modelo de verdade (models/prioridade_v2.joblib)
 
 def test_post_grava_prioridade_e_categoria_do_modelo(com_doador):
     r = com_doador.post("/lotes", json=LOTE)
@@ -108,7 +108,7 @@ def test_predict_recebe_o_lote_como_a_api_recebeu(com_doador, monkeypatch):
 
 def test_falha_do_modelo_nao_derruba_o_cadastro(com_doador, monkeypatch, caplog):
     def quebra(lote):
-        raise FileNotFoundError("models/prioridade_v1.joblib")
+        raise FileNotFoundError("models/prioridade_v2.joblib")
 
     predict_falso(monkeypatch, quebra)
     r = com_doador.post("/lotes", json=LOTE)

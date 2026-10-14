@@ -7,8 +7,8 @@ from pathlib import Path
 
 METRICAS = Path(__file__).resolve().parent.parent / "models" / "metrics.json"
 
-# PREMISSA do grupo, sem fonte ainda. O Charles fecha o valor com a fonte (roadmap, dia 15);
-# ate la o numero vai marcado como premissa em toda resposta que o usa.
+# PREMISSA do grupo, sem fonte brasileira (docs/kpis.md). Vai marcada como premissa em toda
+# resposta que a usa. A unica referencia achada (Feeding America, EUA) da ~0,544 kg.
 KG_POR_REFEICAO_PADRAO = 0.5
 
 
@@ -69,7 +69,8 @@ def calcula_impacto(lotes: list[dict], doacoes: list[dict], ongs: list[dict], fa
         ],
         "fator_kg_por_refeicao": fator,
         "premissas": [
-            f"1 refeicao = {fator} kg: PREMISSA do grupo, sem fonte (KG_POR_REFEICAO)",
+            f"1 refeicao = {fator} kg: PREMISSA do grupo (KG_POR_REFEICAO). Unica referencia achada, "
+            "de outro pais: Feeding America usa 1,2 lb (~0,544 kg) por refeicao (docs/kpis.md)",
             "kg doados = lotes com status doado e doacao confirmada; reservado fica em kg_em_andamento",
             "por_estado agrupa pela UF da ONG que recebeu; por_dia pela data de confirmacao (UTC)",
         ],

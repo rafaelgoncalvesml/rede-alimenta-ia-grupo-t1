@@ -11,7 +11,7 @@ hello world de `infra/deploy-test`, que fica so como registro do teste do dia 2)
 | `runtime` | `docker`, `api/Dockerfile`, contexto na raiz | E a mesma imagem testada no dia 19 contra o Supabase |
 | `region` | `ohio` | O Supabase esta em `us-east-2`. No dia 19 cada consulta levou ~0,63 s de uma maquina no Brasil; na mesma regiao deve cair, mas **nao medi** |
 | `healthCheckPath` | `/health` | Responde sem tocar o banco, entao o Render nao derruba o servico se o Supabase estiver lento |
-| `autoDeployTrigger` | `off` | O dia 22 traz o workflow que so faz deploy se Bandit e Trivy passarem. Com `commit` o Render publicaria antes do gate |
+| `autoDeployTrigger` | `off` | O CI (`.github/workflows/ci.yml`) roda Bandit e Trivy, mas nao faz deploy. Com `commit` o Render publicaria antes de o CI terminar |
 | `PORT` | `8000` | O Dockerfile fixa a 8000. O Render documenta 10000 como padrao e diz que costuma detectar outra porta; deixei explicito pra nao depender disso |
 
 Nao conferi o arquivo contra o Render: nao tenho conta nem CLI aqui. Conferi o YAML (le
@@ -65,15 +65,18 @@ Servico do plano free, 18 minutos sem nenhum acesso, depois um `curl` no `/healt
 | `/health/db` logo depois | 0,28 s |
 
 Uma medida so, num dia so: serve de ordem de grandeza, nao de garantia. Bate com os ~22 s do
-hello world do dia 3. O modelo so carrega no primeiro `POST /lotes` (cerca de 1 s a mais
-localmente); **isso nao medi no Render.** O Render tambem avisa na propria tela que o free
-"pode atrasar pedidos em 50 segundos ou mais".
+hello world do dia 3. O primeiro `POST /lotes` levou 9,8 s no dia 23 porque o modelo so carregava
+nele. **Desde 13/10 o modelo carrega quando a API sobe** (`api/ia.py`, `pre_carregar_modelo`): o
+custo foi pro acordar, e o log da subida traz o evento `modelo.carregado` com `segundos` e
+`memoria_pico_mb`, a memoria que a aba Metrics do plano free nao mostra. **Ainda nao medido no
+Render.** O Render tambem avisa na propria tela que o free "pode atrasar pedidos em 50 segundos ou mais".
 
 ### Plano de abertura da URL antes da defesa
 
 1. Uns 5 minutos antes: abrir `.../health` no navegador e esperar o `{"status":"ok"}`.
-2. Entrar no `/docs`, logar com o admin e fazer **um `POST /lotes` de aquecimento** (carrega o
-   modelo). Depois pode apagar o lote, se estiver `disponivel`.
+2. Conferir no log do Render a linha `modelo.carregado` da subida. Se ela nao estiver la (o modelo
+   falhou ao carregar), os lotes vao entrar sem prioridade: e o momento de investigar, nao a demo.
+   O `POST /lotes` de aquecimento deixou de ser necessario.
 3. Deixar uma aba com `/health/db` e outra com o dashboard abertas (quando ele existir). O servico dorme de novo
    com ~15 min sem trafego; se a apresentacao tiver pausa longa, repetir o passo 1.
 4. Plano B se a URL cair ou demorar: o container local (`docs/container.md`) com o mesmo

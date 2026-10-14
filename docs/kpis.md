@@ -5,17 +5,25 @@ doador os proprios lotes e as doacoes deles, ONG as doacoes que recebeu e os lot
 correspondentes. O calculo esta em `api/kpis.py` (funcoes puras, testadas em
 `api/tests/test_kpis.py`).
 
-## O que o Charles ainda precisa fechar
+## Formulas e fator: fechado (Charles, 12/10)
 
-O roadmap (dia 15) pediu pro Charles as formulas e o fator kg por refeicao, **com fonte ou
-marcado como premissa**. Nada disso chegou ao repo, entao implementei o que o resto do grupo
-precisa pra ligar o dashboard e deixei o fator como premissa explicita:
+O roadmap (dia 15) pediu as formulas e o fator kg por refeicao, **com fonte ou marcado como
+premissa**. Conferi as formulas abaixo contra o roadmap (kg salvos, refeicoes geradas, tempo
+medio de match) e **ficam como o Rafael implementou**: nenhuma mudanca em `api/kpis.py`.
 
-- `1 refeicao = 0,5 kg` e **premissa nossa, sem fonte**. Nao pesquisei nem citei referencia.
+**Fator: `1 refeicao = 0,5 kg` continua PREMISSA do grupo, sem fonte propria.** Procurei fonte
+e nao achei nenhuma brasileira (banco de alimentos municipal, Mesa Brasil e relatorios abertos
+nao publicam um fator kg por refeicao). A unica referencia publica que achei e de outro pais:
+
+- Feeding America (EUA): "Each meal is roughly 1.2 pounds"
+  ([about-our-claims](https://feedingamerica.org/ways-to-give/faq/about-our-claims), consultado
+  em 12/10/2026). 1,2 lb = **0,544 kg**. A pagina nao informa a base do calculo.
+- O nosso 0,5 kg fica ~8% abaixo e, por isso, **gera ~9% mais refeicoes** que a referencia
+  (1/0,5 = 2,00 refeicoes por kg contra 1/0,544 = 1,84). Se o grupo preferir o numero com
+  fonte, e so `KG_POR_REFEICAO=0.544` no ambiente e citar o dado dos EUA como referencia.
 - Vem de `KG_POR_REFEICAO` (padrao 0,5), volta em toda resposta como `fator_kg_por_refeicao` e
-  na lista `premissas`. Quando o Charles fechar o valor com a fonte, e so trocar a variavel e
-  citar a fonte aqui.
-- Se as formulas dele forem diferentes das de baixo, a mudanca e em `api/kpis.py`.
+  na lista `premissas`, com a referencia ao lado. Na defesa: "premissa nossa; a unica referencia
+  achada (EUA) da 0,544 kg".
 
 ## `/kpis/impacto`
 

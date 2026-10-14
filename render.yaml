@@ -8,7 +8,7 @@ services:
     # o Supabase esta em us-east-2 (Ohio); a mesma regiao corta a latencia de cada consulta
     region: ohio
     healthCheckPath: /health
-    # o deploy sai do workflow do dia 22, so depois de Bandit e Trivy passarem
+    # deploy manual pelo painel do Render. O CI (.github/workflows/ci.yml) roda Bandit e Trivy, mas nao publica
     autoDeployTrigger: "off"
     envVars:
       # o Dockerfile sobe o uvicorn na 8000; sem isto o Render espera a 10000

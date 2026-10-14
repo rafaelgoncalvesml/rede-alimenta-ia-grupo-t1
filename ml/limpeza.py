@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from ml.features import adicionar_features
+from ml.geo import LATITUDE_BRASIL, LONGITUDE_BRASIL
 
 RAIZ = Path(__file__).resolve().parents[1]
 ENTRADA = RAIZ / "data" / "lotes_v0.csv"
@@ -17,10 +18,6 @@ SAIDA = RAIZ / "data" / "lotes_v1.csv"
 # o proximo lote fica abaixo de 25x, entao isso separa erro de unidade de lote grande de verdade
 LIMITE_ERRO_UNIDADE = 100
 
-# retangulo que contem o Brasil (aproximado). Pega 0,0 (coordenada zerada) e latitude/longitude
-# trocadas, que passam num teste de intervalo -90..90 mas cairiam no oceano
-LATITUDE_BRASIL = (-33.75, 5.27)
-LONGITUDE_BRASIL = (-73.99, -28.85)
 
 
 def carregar(caminho: Path = ENTRADA) -> pd.DataFrame:

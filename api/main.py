@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
 
-from api import auditoria, erros, limites, seguranca
+from api import auditoria, erros, ia, limites, seguranca
 from api.routers import auth, doacoes, doadores, kpis, lotes, ongs, usuarios
 from api.storage import PostgresStorage, get_storage
 
@@ -17,6 +17,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 async def _ciclo_de_vida(app: FastAPI):
     seguranca.valida_config()  # sem JWT_SECRET a API nao sobe
     seguranca.garantir_admin()
+    ia.pre_carregar_modelo()  # nunca levanta: sem modelo a API sobe e o lote entra sem prioridade
     yield
 
 

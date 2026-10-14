@@ -39,7 +39,7 @@ from ml.features import (
 )
 
 # quem le define o caminho e o treino (ml/treinar.py) importa daqui: a API nao carrega codigo de treino
-MODELO = Path(__file__).resolve().parents[1] / "models" / "prioridade_v1.joblib"
+MODELO = Path(__file__).resolve().parents[1] / "models" / "prioridade_v2.joblib"
 
 DATA_ISO = re.compile(r"\d{4}-\d{2}-\d{2}")
 
