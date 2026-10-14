@@ -100,7 +100,7 @@ A API roda no Render (plano free, regiao Ohio, a mesma do Supabase), criada pelo
 3. Aplicar o schema no Supabase com `python infra/db/aplicar_schema.py`.
 4. Conferir com `python -m infra.db.testar_producao`, que roda o fluxo ponta a ponta contra a URL publica e apaga o que criou.
 
-Antes de uma apresentacao: o servico dorme depois de uns 15 minutos sem trafego e o primeiro pedido leva cerca de 22 s (medido uma vez). O primeiro `POST /lotes` leva mais uns 10 s porque carrega o modelo. Abra `/health` uns 5 minutos antes e faca um `POST /lotes` de aquecimento. Detalhes, riscos e o plano B em `docs/deploy-render.md`.
+Antes de uma apresentacao: o servico dorme depois de uns 15 minutos sem trafego e o primeiro pedido leva de 22 a 42 s (medido tres vezes; a de 14/10 foi de 42 s, ja com o modelo carregando na subida). Em 14/10, depois do redeploy do commit `e01b420`, o primeiro `POST /lotes` levou 0,31 s, porque o modelo (9 s) carrega na subida. Abra `/health` uns 5 minutos antes e faca um `POST /lotes` de aquecimento. Detalhes, riscos e o plano B em `docs/deploy-render.md`.
 
 ## Variaveis de ambiente
 

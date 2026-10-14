@@ -73,7 +73,7 @@ pro maior:
    precisa do aval do grupo pra furar o congelamento; sem ela, a defesa tem que dizer que a ONG
    da doacao ainda e escolhida por quem chama a API.
 8. Tela minima (Streamlit chamando `/kpis/impacto` e `/kpis/ia`). Maior risco de prazo.
-9. Redeploy no Render com a versao final, ja que o deploy e manual e o que esta no ar e antigo.
+9. Redeploy no Render com a versao final: feito em 14/10 (ver "Redeploy e teste em producao" abaixo).
 
 Os itens 2 a 6 nao sao feature de produto e cabem no congelamento.
 
@@ -124,9 +124,9 @@ Nenhum teste falha e o Bandit nao achou nada. Os itens abaixo vem de ler o repo 
 |---|---|---|---|
 | 1 | README da `main` comecava com uma linha de link solta, resto do upload pela web | media | corrigido neste PR |
 | 2 | `.ruff_cache/` (14 arquivos) foi commitado na `main` pelo upload | baixa | corrigido neste PR (`git rm --cached`; o `.gitignore` ja ignorava) |
-| 3 | Producao roda o modelo v1; a `main` apagou `prioridade_v1.joblib` e tem so o v2. Deploy manual: quem apertar o botao muda o modelo (e as metricas) em producao | alta se redeploy for feito sem teste | Rafael: redeployar na quarta, nao na quinta de manha, e rodar `testar_producao.py` |
-| 4 | Cold start de 22 s e primeiro lote de 10 s no Render free. A `main` agora carrega o modelo na subida (`pre_carregar_modelo`), o que deve tirar os 10 s do primeiro lote; nao medi em producao | alta na defesa | Rafael: medir depois do redeploy |
-| 5 | Variaveis do Render (`SUPABASE_DB_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`) ja sumiram uma vez num deploy; `/health` nao detecta | alta | Rafael: `/health/db` e login depois de cada deploy |
+| 3 | Producao roda o modelo v1; a `main` apagou `prioridade_v1.joblib` e tem so o v2. Deploy manual: quem apertar o botao muda o modelo (e as metricas) em producao | alta se redeploy for feito sem teste | resolvido em 14/10: redeploy do `e01b420` e `testar_producao.py` com todas as verificacoes OK |
+| 4 | Cold start de 22 s e primeiro lote de 10 s no Render free. A `main` agora carrega o modelo na subida (`pre_carregar_modelo`), o que deve tirar os 10 s do primeiro lote; nao medi em producao | alta na defesa | primeiro lote caiu pra 0,31 s; o cold start do container continua em 22 a 42 s, entao acordar o servico 5 minutos antes |
+| 5 | Variaveis do Render (`SUPABASE_DB_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`) ja sumiram uma vez num deploy; `/health` nao detecta | alta | conferido em 14/10: `/health/db` com postgres e login do admin de teste OK |
 | 6 | Trabalho dos dias 24 e 25 (reset da demo, README) estava so na maquina do Rafael | media | resolvido pelo PR dos dias 24 e 25 |
 | 7 | `KG_POR_REFEICAO = 0,5` e premissa; Charles achou uma referencia (EUA, 0,544 kg) em `docs/kpis.md`, ainda nao e fonte brasileira | media | Charles: dizer "premissa" na defesa |
 | 8 | Tetos de lote e de ONG (5000 kg, 100000 kg) sem aval do grupo | baixa | grupo |
@@ -142,3 +142,18 @@ Nenhum teste falha e o Bandit nao achou nada. Os itens abaixo vem de ler o repo 
 | Anthony | revisar `docs/lgpd.md` e `docs/stride.md` (estados e riscos), decidir o que fazer da protecao da `main` |
 | Gustavo | tela minima, se o grupo decidir que entra; senao, preparar o Swagger como demo |
 | Charles | bugs 1, 7, 10 e 11; texto sobre limites do modelo pro pitch; rota de matching se o grupo aprovar |
+
+## Redeploy e teste em producao (14/10)
+
+O deploy do commit `e01b420` (merge do PR #30) foi disparado a mao pelo painel do Render e ficou no ar
+as 3:16. No log da subida, `modelo.carregado` em 9,05 s e pico de 191 MB (o plano free tem 512 MB), e
+nenhum `Traceback` na ultima hora.
+
+`python -m infra.db.testar_producao` contra `https://rede-alimenta-ia-api.onrender.com`: todas as
+verificacoes OK e o banco voltou ao que era (3 doadores, 4 ONGs, 5 lotes, 0 doacoes, 2 usuarios, antes e
+depois). Primeiro `POST /lotes` em 0,31 s e o segundo em 0,30 s, com a prioridade vinda do modelo. Ao
+final o script imprime um aviso do `psycopg_pool` ao encerrar (`ConnectionPool.__del__`); acontece depois
+de tudo e nao afeta o resultado.
+
+O que continua: a primeira requisicao depois de o servico dormir leva de 22 a 42 s (container
+acordando mais 9 s do modelo). Antes da defesa, abrir `/health` uns 5 minutos antes.
