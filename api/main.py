@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
 
 from api import auditoria, erros, ia, limites, seguranca
-from api.routers import auth, doacoes, doadores, kpis, lotes, ongs, usuarios
+from api.routers import auth, doacoes, doadores, kpis, lotes, matching, ongs, usuarios
 from api.storage import PostgresStorage, get_storage
 
 # o .env tem que estar carregado antes do lifespan: ele valida o JWT_SECRET na subida, e o
@@ -30,6 +30,7 @@ app.include_router(ongs.router)
 app.include_router(lotes.router)
 app.include_router(doacoes.router)
 app.include_router(kpis.router)
+app.include_router(matching.router)
 # o corpo e conferido por dentro da auditoria, pra o 413 sair no log
 app.add_middleware(limites.LimiteDeCorpo)
 erros.instala(app)

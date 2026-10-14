@@ -16,18 +16,13 @@ token falta ou e invalido. O IP vem de `auditoria.ip_do_cliente`: o `client.host
 | `POST /doacoes` | 30 / min | Escrita que reserva lote |
 | `POST /usuarios` | 10 / min | Cria conta |
 | `POST /auth/login` | 5 erros / 15 min por e-mail | Ja existia (dia 15), e mais apertado que o geral |
-| **`POST /matching/{lote_id}`** | **20 / min (pronto, nao ligado)** | A rota ainda nao existe |
+| `POST /matching/{lote_id}` | 20 / min | Cruza o lote com todas as ONGs |
 
 `/health`, `/health/db` e `/auth/login` ficam fora do limite **geral**: o Render chama o health
 o tempo todo, e o login ja tem o limite proprio.
 
-**Matching:** o roadmap pede o limite no `/matching`, mas o endpoint nao chegou ao repo. Deixei
-`limites.MATCHING = 20` e a dependencia pronta (`test_limita_pronto_pra_rota_do_matching` prova
-que funciona). Quando a rota entrar, e uma linha:
-
-```python
-@router.post("/{lote_id}", dependencies=[Depends(limites.limita("matching", limites.MATCHING))])
-```
+**Matching:** a rota entrou (`api/routers/matching.py`) com `limites.MATCHING = 20`, e `test_limite_de_pedidos_por_minuto`
+em `api/tests/test_matching.py` confere o 429 no 21o pedido.
 
 ## Tamanho do corpo
 

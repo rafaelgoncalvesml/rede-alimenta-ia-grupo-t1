@@ -165,8 +165,8 @@ pytest ml api
 ```
 
 Limites pra defesa: o modelo aprende a nossa formula, nao o mundo real, e ganha da regra simples por
-pouco (diferenca de -0,001 a +0,117 no F1, IC 95%). A rota `POST /matching/{lote_id}` ainda nao esta na
-API; a funcao esta pronta e o trecho da rota esta em `docs/matching.md`.
+pouco (diferenca de -0,001 a +0,117 no F1, IC 95%). A rota `POST /matching/{lote_id}` (admin e doador dono do lote) devolve o ranking e as ONGs descartadas; ver `docs/matching.md`.
+
 
 ## Testes e qualidade
 
@@ -247,6 +247,10 @@ Prioridade: o `POST /lotes` chama `predict()` de `ml/predict.py` (contrato em `d
 - Nao existe `PUT` nem `DELETE` de doacao. Se a reserva cai (`PUT /lotes/{id}` de `reservado` para `disponivel` ou `descartado`), a doacao vira `cancelada` e o lote pode ser doado a outra ONG. `reservado` -> `doado` (entrega) mantem a confirmada.
 - Lote e ONG com doacao registrada nao podem ser apagados (409). `GET /doacoes` aceita `lote_id`, `ong_id` e `status`.
 
+### Matching
+
+`POST /matching/{lote_id}` sem corpo devolve `{"ranking": [...], "descartadas": [...]}` para o lote: as ONGs que aceitam a categoria e aguentam o peso, da mais perto para a mais longe (`distancia_km`, `score` e `geo_aproximada`). `distancia_km` e `score` cabem em `POST /doacoes`. Admin ou o doador dono do lote; ONG recebe 403. Lote inexistente volta 404, lote que nao esta `disponivel` volta 409 e doador sem coordenada e em cidade sem centro conhecido volta 422. Limite de 20 por minuto. Nao grava nada: quem confirma e o `POST /doacoes`.
+
 ### KPIs
 
 `GET /kpis/impacto` e `GET /kpis/ia`, abertos a qualquer usuario logado; cada papel soma so o que e dele. Formulas e premissas em `docs/kpis.md`.
@@ -293,7 +297,6 @@ O log de auditoria sai no stdout, uma linha JSON por pedido (`tipo: requisicao`:
 
 Conferido em 13/10 contra a `main` do GitHub:
 
-- Rota de matching (`POST /matching/{lote_id}`). A funcao `ml/matching.py` esta pronta e testada, e o trecho da rota esta em `docs/matching.md`. Hoje a ONG de cada doacao e escolhida por quem chama a API.
 - Frontend e dashboard: `app/` so tem `.gitkeep`. Sem eles a demo visual e o Swagger em `/docs`.
 - Teste do `docker compose up` na maquina de alguem: so o CI o rodou.
 - Protecao de branch na `main`: o plano free do GitHub nao oferece em repo privado.

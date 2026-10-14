@@ -76,6 +76,9 @@ MATRIZ = [
     ("GET", "/doacoes", None, [401, 200, 200, 200, 200, 200]),
     ("GET", "/doacoes/1", None, [401, 200, 403, 200, 403, 200]),
 
+    # lote 3 (de A, disponivel) e o unico que o matching aceita; o lote 1 ja foi doado
+    ("POST", "/matching/3", None, [401, 200, 403, 403, 403, 200]),
+
     ("GET", "/kpis/impacto", None, [401, 200, 200, 200, 200, 200]),
     ("GET", "/kpis/ia", None, [401, 200, 200, 200, 200, 200]),
 ]
@@ -94,7 +97,7 @@ def test_matriz_cobre_todas_as_rotas_da_api():
     publicas = {("GET", "/health"), ("GET", "/health/db"), ("POST", "/auth/login")}
     na_api = {(m, r.path) for r in app.routes if hasattr(r, "methods")
               for m in r.methods if r.path.startswith(("/doadores", "/ongs", "/lotes", "/doacoes",
-                                                       "/usuarios", "/auth", "/health", "/kpis"))}
+                                                       "/usuarios", "/auth", "/health", "/kpis", "/matching"))}
     na_matriz = {(m, c.split("/")[1]) for m, c, _, _ in MATRIZ}
     for metodo, caminho in na_api - publicas - {("GET", "/auth/eu")}:
         assert (metodo, caminho.split("/")[1]) in na_matriz, f"{metodo} {caminho} sem teste de acesso"

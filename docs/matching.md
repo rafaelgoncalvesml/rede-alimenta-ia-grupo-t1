@@ -72,9 +72,9 @@ regra da limpeza do dataset) conta como ausente. Ai:
 - Os centros das cidades sao os mesmos de `data/gerar_dataset_v0.py` (um teste garante). Cidade
   fora dessa lista so funciona se doador e ONG tiverem coordenada propria.
 
-## Como a rota chama (pro Rafael)
+## A rota (`api/routers/matching.py`)
 
-```python
+```python  # como esta no codigo (a rota tambem devolve 409 se o lote nao esta disponivel)
 @router.post("/{lote_id}", dependencies=[Depends(limites.limita("matching", limites.MATCHING))])
 def sugerir(lote_id: int, usuario: Usuario = Depends(admin_ou_doador)) -> dict:
     db = get_storage()
@@ -89,5 +89,5 @@ def sugerir(lote_id: int, usuario: Usuario = Depends(admin_ou_doador)) -> dict:
         raise HTTPException(status_code=422, detail=str(erro)) from None
 ```
 
-Verificado de ponta a ponta com o seed de demo (`docs/seed-demo.md`): lote, prioridade do modelo,
+Testes: `api/tests/test_matching.py` e a linha `POST /matching/3` da matriz de `test_acesso_negado.py`. Verificado de ponta a ponta com o seed de demo (`docs/seed-demo.md`): lote, prioridade do modelo,
 matching, doacao confirmada e KPI.
