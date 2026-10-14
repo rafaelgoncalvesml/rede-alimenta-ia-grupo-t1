@@ -11,7 +11,7 @@ hello world de `infra/deploy-test`, que fica so como registro do teste do dia 2)
 | `runtime` | `docker`, `api/Dockerfile`, contexto na raiz | E a mesma imagem testada no dia 19 contra o Supabase |
 | `region` | `ohio` | O Supabase esta em `us-east-2`. No dia 19 cada consulta levou ~0,63 s de uma maquina no Brasil; na mesma regiao deve cair, mas **nao medi** |
 | `healthCheckPath` | `/health` | Responde sem tocar o banco, entao o Render nao derruba o servico se o Supabase estiver lento |
-| `autoDeployTrigger` | `off` | O dia 22 traz o workflow que so faz deploy se Bandit e Trivy passarem. Com `commit` o Render publicaria antes do gate |
+| `autoDeployTrigger` | `off` | O CI (`.github/workflows/ci.yml`) roda Bandit e Trivy, mas nao faz deploy. Com `commit` o Render publicaria antes de o CI terminar |
 | `PORT` | `8000` | O Dockerfile fixa a 8000. O Render documenta 10000 como padrao e diz que costuma detectar outra porta; deixei explicito pra nao depender disso |
 
 Nao conferi o arquivo contra o Render: nao tenho conta nem CLI aqui. Conferi o YAML (le
