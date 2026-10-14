@@ -73,9 +73,9 @@ A leitura de que os 44 HIGH nao sao alcancaveis pela API e nossa, nao teste de e
 
 `.github/workflows/ci.yml`, em push na `main` e em pull request: ruff e pytest, Bandit, pip-audit,
 build da imagem, Trivy (`--severity HIGH,CRITICAL --ignore-unfixed`, derruba o job) e uma subida
-do container conferindo `/health`. Os mesmos comandos rodaram na maquina do Rafael em 13/10 e
-passaram, mas o workflow ainda nao foi executado no GitHub. Antes da defesa, abrir a aba Actions
-e so falar dele como funcionando depois de ver o resultado. O deploy continua manual.
+do container conferindo `/health`. Passou nos tres jobs no GitHub em 14/10, depois de dois ajustes
+nossos (o `pytest` precisou de `python -m` e a action do Trivy de uma tag valida). O deploy
+continua manual: o CI testa e escaneia, mas nao publica.
 
 ## E o docker-compose?
 
