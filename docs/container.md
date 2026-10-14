@@ -54,8 +54,8 @@ real (o `joblib` guarda pickle), e o teste confirma: o lote cadastrado volta com
 
 ## O que nao foi testado
 
-- **`docker compose up`.** Nao existe `docker-compose.yml` no repo (e do Anthony, dia 16), entao
-  nao testei a parte "do zero na maquina de cada um". So rodei esta imagem sozinha, na minha.
+- **`docker compose up` na maquina de alguem.** O `docker-compose.yml` entrou em 14/10 (so a API) e
+  o job `compose` do CI o sobe e confere `/health`. Nesta maquina rodei so a imagem sozinha.
 - **Trivy.** Em 06/10 nao tinha rodado. Rodou em 12/10 e o Dockerfile mudou por causa dele (pip
   fora da imagem final, `apt-get upgrade`); relatorio em `docs/security/trivy-imagem.md`.
   Esta pagina descreve a imagem do dia 19, antes dessas duas mudancas; tamanho e medidas

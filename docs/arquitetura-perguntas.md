@@ -79,8 +79,10 @@ continua manual: o CI testa e escaneia, mas nao publica.
 
 ## E o docker-compose?
 
-Tambem nao existe. So a imagem da API foi testada, sozinha, contra o banco em nuvem. Nao ha
-servico local de banco porque o banco e o Supabase.
+Existe, so pra API (`docker-compose.yml`). O servico do Streamlit esta comentado ate o frontend
+existir. O compose sobe a API com `read_only`, sem capabilities e sem privilegios novos; o job
+`compose` do CI confere que ela responde em `/health` desse jeito, mas ninguem rodou na propria
+maquina. Nao ha servico local de banco porque o banco e o Supabase.
 
 ## Como o sistema trata dado pessoal (LGPD)?
 

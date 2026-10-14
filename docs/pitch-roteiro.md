@@ -53,7 +53,7 @@ Pipeline em `.github/workflows/ci.yml`: ruff, pytest, Bandit, pip-audit, build e
 verde no GitHub em 14/10; conferir a aba Actions de novo antes de apresentar. Existem tambem
 `docs/stride.md` e `docs/lgpd.md`, os dois como rascunho pra revisao.
 
-Falta: docker-compose, deploy automatico (hoje e manual pelo painel do Render) e revisao juridica da LGPD.
+Existem 29 testes de ataque (`api/tests/test_seguranca.py`) e um `docker-compose.yml` da API. Falta: deploy automatico (hoje e manual pelo painel do Render), protecao de branch (o plano free nao tem) e revisao juridica da LGPD.
 
 ## 5. Banco e deploy (Rafael, 1 min)
 

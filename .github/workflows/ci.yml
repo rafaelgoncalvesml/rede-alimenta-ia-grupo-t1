@@ -51,8 +51,11 @@ jobs:
           name: bandit
           path: bandit.txt
           if-no-files-found: ignore
-      - name: pip-audit nas dependencias da API
-        run: pip-audit -r api/requirements.txt
+      - name: pip-audit nas dependencias
+        run: |
+          pip-audit -r api/requirements.txt
+          pip-audit -r ml/requirements.txt
+          pip-audit -r infra/db/requirements.txt
 
   imagem:
     name: Docker build e Trivy
@@ -88,4 +91,28 @@ jobs:
             sleep 2
           done
           docker logs api-ci
+          exit 1
+
+  compose:
+    name: docker compose
+    runs-on: ubuntu-latest
+    needs: testes
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config -q
+      # sobe a API como no docker-compose.yml, com read_only e sem capabilities: se ela precisar
+      # escrever em algum lugar, e aqui que aparece. O .env e so de CI, com um segredo descartavel
+      - name: API sobe pelo compose e responde em /health
+        run: |
+          echo "JWT_SECRET=ci-so-pra-health-check-0123456789abcdef" > .env
+          docker compose up -d --build api
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:8000/health; then
+              curl -fsS -o /dev/null http://localhost:8000/docs
+              docker compose down
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose logs api
           exit 1
