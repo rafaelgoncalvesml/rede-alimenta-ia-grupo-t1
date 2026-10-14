@@ -65,7 +65,7 @@ jobs:
       # --ignore-unfixed porque os HIGH que sobram na Debian 13 ainda nao tem correcao publicada
       # (docs/security/trivy-imagem.md). Sem a flag o gate ficaria vermelho sem ter o que corrigir
       - name: Trivy na imagem
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: rede-alimenta-api:ci
           scanners: vuln,secret
@@ -73,7 +73,7 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
       - name: Trivy no Dockerfile
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
           scan-ref: api
