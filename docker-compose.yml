@@ -6,8 +6,9 @@
 # tambem SUPABASE_DB_URL e rode com STORAGE=postgres.
 # O .env fica fora do Git e fora da imagem: so entra no container como variavel de ambiente.
 #
-# O frontend (Streamlit) ainda nao esta no repo (app/ so tem .gitkeep). Quando chegar, o servico
-# abaixo, comentado, so precisa de um app/Dockerfile e de um app/requirements.txt.
+# O frontend (Streamlit) ja tem app/Dockerfile, mas o servico abaixo segue comentado: a imagem so foi
+# construida no CI (job "Imagem do app"), ninguem subiu os dois juntos por aqui. Antes de ligar,
+# troque API_URL por REDE_ALIMENTA_API_URL, que e o nome que o app le.
 services:
   api:
     build:

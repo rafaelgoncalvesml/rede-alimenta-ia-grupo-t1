@@ -1,0 +1,6 @@
+# So o que o app precisa entra no contexto de build: ele nao leva .env, testes, docs nem a API.
+*
+!app
+!data/historico_simulado.json
+app/tests
+**/__pycache__

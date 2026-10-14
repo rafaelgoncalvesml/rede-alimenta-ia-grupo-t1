@@ -45,7 +45,7 @@ Tabelas: `doadores`, `ongs`, `lotes`, `doacoes`, `usuarios` e `demo_seed` (copia
 - `api/`: backend FastAPI, testes em `api/tests/`
 - `ml/`: modelo de priorizacao e testes
 - `models/`: modelo treinado e `metrics.json`
-- `app/`: frontend em Streamlit (`dashboard.py`, `services/api_client.py`)
+- `app/`: frontend em Streamlit (`dashboard.py`, `services/`), com `Dockerfile` e `dados/seguranca.json`
 - `infra/`: schema do banco, scripts de banco e o hello world do deploy de teste
 - `docs/`: decisoes tecnicas, checkpoints, auth, deploy, container e relatorios de seguranca
 - `data/`: dataset simulado, gerador, historico simulado e `seed_demo.json`
@@ -89,7 +89,16 @@ docker run -d --name rede-api -p 8000:8000 \
 
 `-e VAR` sem valor copia a variavel do shell, entao a senha do banco nao aparece no comando. Sem `STORAGE=postgres` a API sobe em memoria. A imagem usa Python 3.12, roda com um usuario sem root e traz um healthcheck em `/health`. O `.dockerignore` deixa o `.env` de fora.
 
-O `docker-compose.yml` sobe so a API (`docker compose up --build`, com `JWT_SECRET` no `.env`); o servico do Streamlit continua comentado: o frontend ainda nao tem Dockerfile nem deploy. Ele so foi testado no job `compose` do CI, nao na maquina de ninguem. Medidas, o que foi e o que nao foi testado em `docs/container.md`; achados do Trivy em `docs/security/trivy-imagem.md`.
+O `docker-compose.yml` sobe so a API (`docker compose up --build`, com `JWT_SECRET` no `.env`); o servico do Streamlit continua comentado: a imagem do app (`app/Dockerfile`) so foi construida no CI. Ele so foi testado no job `compose` do CI, nao na maquina de ninguem. Medidas, o que foi e o que nao foi testado em `docs/container.md`; achados do Trivy em `docs/security/trivy-imagem.md`.
+
+### Frontend
+
+Em `app/`: `pip install -r app/requirements.txt` e `streamlit run app/dashboard.py`. Ele fala com a API pela
+variavel `REDE_ALIMENTA_API_URL` (no `.env` da raiz ou em `app/.streamlit/secrets.toml`); sem ela abre em modo
+demonstracao. Em Relatorios, alem dos KPIs de `/kpis/impacto` e `/kpis/ia`, ha o mapa de calor (historico
+simulado ou doacoes da API) e o bloco de seguranca (gates do CI, Bandit, pip-audit, o que foi corrigido e o
+que ficou aceito). O bloco de seguranca le `app/dados/seguranca.json`, que `python infra/gerar_seguranca.py`
+refaz rodando as ferramentas de verdade. Imagem e passo a passo do deploy em `docs/deploy-app.md`.
 
 ### Producao
 
@@ -294,8 +303,9 @@ O log de auditoria sai no stdout, uma linha JSON por pedido (`tipo: requisicao`:
 
 Conferido em 14/10:
 
-- Frontend publicado: o Streamlit em `app/` roda local contra a API (sem Dockerfile nem URL publica). O CI so confere `ruff` e `pip-audit` nele; nao ha teste automatico da tela.
-- Dashboard: nao tem o bloco de seguranca (saude do pipeline, vulnerabilidades, security gates) nem mapa de calor, que o PDF do professor pede.
+- Frontend publicado: o Streamlit tem imagem (`app/Dockerfile`) mas ainda nao tem URL publica; o passo manual esta em `docs/deploy-app.md`. Nao ha teste automatico da tela, so dos dados dos paineis (`app/tests/`).
+- O bloco de seguranca do dashboard mostra um arquivo gerado, nao consulta o CI ao vivo: depois de mudar o pipeline, rode `python infra/gerar_seguranca.py` e commite o JSON.
+- O mapa de calor mostra onde a comida chegou, nao carencia: nao ha dado de necessidade por bairro, e o historico e simulado.
 - Teste do `docker compose up` na maquina de alguem: so o CI o rodou.
 - Protecao de branch na `main`: o plano free do GitHub nao oferece em repo privado.
 - Relatorio do Bandit em `docs/security/`. O CI guarda o resultado como artefato a cada execucao.

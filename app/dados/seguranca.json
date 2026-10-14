@@ -1,0 +1,150 @@
+{
+  "gerado_em": "2026-10-14T21:09:53+00:00",
+  "gerado_por": "infra/gerar_seguranca.py",
+  "medido_agora": {
+    "bandit": {
+      "escopo": "api, ml, infra e app, sem os testes (o mesmo comando do CI)",
+      "alta": 0,
+      "media": 0,
+      "baixa": 0
+    },
+    "pip_audit": [
+      {
+        "arquivo": "api/requirements.txt",
+        "vulnerabilidades": 0
+      },
+      {
+        "arquivo": "ml/requirements.txt",
+        "vulnerabilidades": 0
+      },
+      {
+        "arquivo": "app/requirements.txt",
+        "vulnerabilidades": 0
+      },
+      {
+        "arquivo": "infra/db/requirements.txt",
+        "vulnerabilidades": 0
+      }
+    ],
+    "ruff": "passou",
+    "testes": {
+      "passaram": 508,
+      "falharam": 0
+    }
+  },
+  "ci": {
+    "url": "https://github.com/rafaelgoncalvesml/rede-alimenta-ia-grupo-t1/actions/runs/38628376031",
+    "commit": "0baac2b",
+    "em": "2026-10-14T20:00:15Z",
+    "gates": [
+      {
+        "nome": "ruff e pytest",
+        "status": "passou"
+      },
+      {
+        "nome": "Bandit e pip-audit",
+        "status": "passou"
+      },
+      {
+        "nome": "docker compose",
+        "status": "passou"
+      },
+      {
+        "nome": "Docker build e Trivy",
+        "status": "passou"
+      }
+    ]
+  },
+  "gates": [
+    {
+      "nome": "ruff e pytest",
+      "status": "passou"
+    },
+    {
+      "nome": "Bandit e pip-audit",
+      "status": "passou"
+    },
+    {
+      "nome": "docker compose",
+      "status": "passou"
+    },
+    {
+      "nome": "Docker build e Trivy",
+      "status": "passou"
+    }
+  ],
+  "mitigadas": [
+    {
+      "item": "starlette 0.38.6 (via fastapi): atualizado pra fastapi 0.142.2",
+      "achados": 7,
+      "origem": "pip-audit"
+    },
+    {
+      "item": "pymongo: atualizado pra 4.18.2",
+      "achados": 4,
+      "origem": "pip-audit"
+    },
+    {
+      "item": "python-dotenv: atualizado pra 1.2.3",
+      "achados": 1,
+      "origem": "pip-audit"
+    },
+    {
+      "item": "pip 25.0.1 da imagem base: atualizado no build",
+      "achados": 6,
+      "origem": "Trivy"
+    },
+    {
+      "item": "urllib3, msgpack e setuptools embutidos no pip: pip removido da imagem final",
+      "achados": 5,
+      "origem": "Trivy"
+    },
+    {
+      "item": "liblzma5 da imagem: apt upgrade no build",
+      "achados": 2,
+      "origem": "Trivy"
+    },
+    {
+      "item": "urlopen aceitava file:// em api/seed_dev.py",
+      "achados": 1,
+      "origem": "Bandit B310"
+    },
+    {
+      "item": "infra/deploy-test rodava como root: usuario sem privilegio",
+      "achados": 1,
+      "origem": "Trivy (DS-0002)"
+    }
+  ],
+  "aceitos": [
+    {
+      "cve": "CVE-2026-76642, 78408, 78409, 78410",
+      "pacote": "util-linux",
+      "motivo": "a API nao monta sistema de arquivos nem usa nsenter"
+    },
+    {
+      "cve": "CVE-2025-69720",
+      "pacote": "ncurses",
+      "motivo": "nao ha terminal interativo"
+    },
+    {
+      "cve": "CVE-2026-16742",
+      "pacote": "systemd (libsystemd0, libudev1)",
+      "motivo": "nao usa systemd-homed"
+    },
+    {
+      "cve": "CVE-2026-54369",
+      "pacote": "libacl1",
+      "motivo": "sem uso direto"
+    },
+    {
+      "cve": "CVE-2026-9538",
+      "pacote": "perl-base",
+      "motivo": "sem Archive-Tar"
+    }
+  ],
+  "avisos": [
+    "Bandit, pip-audit, ruff e pytest foram executados na hora de gerar este arquivo.",
+    "O Trivy so roda no CI: o resultado vem da ultima execucao na main, nao daqui.",
+    "Os HIGH da Debian sem correcao ficam fora do gate (--ignore-unfixed); a decisao esta em docs/security/."
+  ]
+}

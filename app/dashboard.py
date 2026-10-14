@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 import streamlit as st
+from services import paineis
 from services.api_client import TRANSICOES, ClienteAPI, ErroAPI
 
 # ==================================================
@@ -3596,6 +3597,16 @@ if pagina == "📊 Relatórios":
                 "ONGs do demo: nome, CNPJ e endereço reais; capacidade e necessidades "
                 "simuladas. As entidades não foram consultadas."
             )
+
+    doacoes_mapa = []
+    if not cliente.demonstracao:
+        try:
+            doacoes_mapa = cliente.listar_doacoes()
+        except ErroAPI as erro:
+            st.warning(f"Doações da API indisponíveis para o mapa: {erro}")
+
+    paineis.mapa_de_calor(cliente, ongs, lotes, doacoes_mapa)
+    paineis.seguranca()
 
     st.markdown("### 🔎 Filtrar registros")
 
