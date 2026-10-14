@@ -49,8 +49,8 @@ login, limite de pedidos (120 por minuto por rota, 30 em `POST /lotes`), erro 50
 trace, log de auditoria sem CPF nem e-mail, imagem Docker sem root, Trivy na imagem (0 critica, 0 em
 pacote Python) e Bandit (0 achados em 13/10 sobre `api`, `ml` e `infra`).
 
-Pipeline em `.github/workflows/ci.yml`: ruff, pytest, Bandit, pip-audit, build e Trivy da imagem. So
-apresentar como funcionando depois de ver a primeira execucao verde no GitHub. Existem tambem
+Pipeline em `.github/workflows/ci.yml`: ruff, pytest, Bandit, pip-audit, build e Trivy da imagem. Passou
+verde no GitHub em 14/10; conferir a aba Actions de novo antes de apresentar. Existem tambem
 `docs/stride.md` e `docs/lgpd.md`, os dois como rascunho pra revisao.
 
 Falta: docker-compose, deploy automatico (hoje e manual pelo painel do Render) e revisao juridica da LGPD.

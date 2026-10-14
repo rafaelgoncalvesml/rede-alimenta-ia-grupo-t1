@@ -176,7 +176,7 @@ pytest ml
 ruff check .
 ```
 
-Em 13/10: 395 testes em `api` e 63 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit, build e Trivy da imagem, `/health` do container); ele ainda nao rodou no GitHub, entao confira a aba Actions.
+Em 13/10: 395 testes em `api` e 63 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit, build e Trivy da imagem, `/health` do container); passou nos tres jobs no GitHub em 14/10, depois de dois ajustes (`python -m pytest` e a tag da action do Trivy).
 
 ## Referencia da API
 

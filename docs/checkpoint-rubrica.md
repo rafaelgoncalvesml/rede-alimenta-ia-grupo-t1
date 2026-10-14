@@ -27,8 +27,8 @@ Clone limpo da `origin/main` num diretorio novo, venv novo, `pip install -r api/
 
 O `pip-audit` tambem rodou em `api/requirements.txt` e `ml/requirements.txt`: 0 vulnerabilidades.
 
-Nao rodei `docker build`, o Trivy, o `testar_producao.py` nem nada que escreva no banco em nuvem.
-Os testes rodaram so no Python 3.14; o CI usa o 3.12 e esse caminho nao foi exercitado.
+Nao rodei o `testar_producao.py` nem nada que escreva no banco em nuvem. Na maquina os testes
+rodaram no Python 3.14. O `docker build` e o Trivy so rodaram no CI do GitHub (secao "O que este PR muda").
 
 ## Rubrica, eixo por eixo (estado da `origin/main`)
 
@@ -36,7 +36,7 @@ Os testes rodaram so no Python 3.14; o CI usa o 3.12 e esse caminho nao foi exer
 |---|---|---|---|
 | Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo | nao ha tela: o impacto so aparece em JSON e no Swagger |
 | Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade) | dados 100% simulados; a rota `POST /matching/{lote_id}` nao existe, so a funcao; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
-| DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render; nesta branch: `ci.yml`, `docs/lgpd.md`, `docs/stride.md` | sem docker-compose; o workflow ainda nao rodou no GitHub; sem protecao de branch na `main` |
+| DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render; nesta branch: `ci.yml`, `docs/lgpd.md`, `docs/stride.md` | sem docker-compose; sem protecao de branch na `main` (o workflow passou no GitHub em 14/10) |
 | Engenharia e defesa (20%) | codigo, README, pitch | README, 455 testes, docs por tema | o README da `main` de 13/10 era o da semana 3 (sem producao, reset e variaveis); o PR dos dias 24 e 25 traz a versao completa; roteiro do pitch e rascunho |
 
 Checkpoint 3 do PDF (URL publica, banco em nuvem, README, pitch): URL e banco estao no ar, o README
@@ -64,8 +64,8 @@ pro maior:
 3. `docs/lgpd.md` e `docs/stride.md`: feitos neste PR como rascunho. Anthony le e corrige.
 4. Relatorio Bandit: o job do CI guarda `bandit.txt` como artefato a cada execucao. Falta copiar um
    resultado pra `docs/security/` se a banca pedir o arquivo no repo.
-5. Workflow de GitHub Actions: feito neste PR (`.github/workflows/ci.yml`). Falta ver a primeira
-   execucao no GitHub e ligar a protecao da `main` (exigir PR e checks).
+5. Workflow de GitHub Actions: feito neste PR (`.github/workflows/ci.yml`) e verde no GitHub em
+   14/10. Falta ligar a protecao da `main` (exigir PR e checks).
 6. `docker-compose.yml` so da API: nao feito.
 7. Ligar `POST /matching/{lote_id}`: `docs/matching.md` ja traz o trecho da rota. E feature, entao
    precisa do aval do grupo pra furar o congelamento; sem ela, a defesa tem que dizer que a ONG
@@ -89,9 +89,11 @@ Branch `chore/lgpd-ci-ajustes`, criada de `origin/main`.
 | Comentarios que apontavam pro modelo v1 e pro "workflow do dia 22" que nao existia | `api/requirements.txt`, `ml/requirements.txt`, `render.yaml` |
 | Estes tres documentos de defesa | `docs/checkpoint-rubrica.md`, `docs/pitch-roteiro.md`, `docs/arquitetura-perguntas.md` |
 
-Os comandos do workflow (`ruff`, `pytest api ml`, `bandit`, `pip-audit`) rodaram na maquina e passaram
-(455 testes, no Python 3.14). O build da imagem e o Trivy nao rodaram (Docker parado) e o workflow
-ainda nao executou no GitHub. Conferir a versao da action do Trivy (`0.28.0`) na primeira execucao.
+Na maquina, os comandos do workflow (`ruff`, `pytest api ml`, `bandit`, `pip-audit`) passaram no
+Python 3.14 (455 testes). No GitHub (14/10) o workflow passou nos tres jobs: ruff e pytest no Python
+3.12, Bandit e pip-audit, e build da imagem com Trivy e `/health` do container. Antes disso falhou duas
+vezes por erro nosso: o `pytest` sem `python -m` nao achava o pacote `api`, e a tag da action do
+Trivy estava errada (`0.28.0` em vez de `v0.28.0`; ficou a `v0.36.0`).
 
 ## Bugs e pontos fracos conhecidos
 
