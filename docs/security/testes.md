@@ -29,4 +29,4 @@ corpo > 64 KiB (413).
   parametros no psycopg (revisao de codigo, nao teste).
 - Atras do proxy do Render o IP pode ser compartilhado: medir o limite de taxa no ambiente real.
 - Token nao e revogavel antes de expirar (30 min). Aceito.
-- O `docker-compose.yml` e testado so no job `compose` do CI (sobe a API com `read_only` e confere `/health`); ninguem rodou na propria maquina.
+- O `docker-compose.yml` foi testado so no job `compose` do CI (14/10): a API sobe com `read_only`, sem capabilities e sem privilegios novos, e responde em `/health` e `/docs`. O teste usa storage em memoria e nao faz `POST`; ninguem rodou o compose na propria maquina.
