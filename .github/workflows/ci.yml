@@ -27,7 +27,8 @@ jobs:
           cache-dependency-path: api/requirements-dev.txt
       - run: pip install -r api/requirements-dev.txt
       - run: ruff check .
-      - run: pytest api ml -q
+      # python -m: so assim a raiz do repo entra no sys.path e o conftest acha o pacote api
+      - run: python -m pytest api ml -q
 
   sast:
     name: Bandit e pip-audit
