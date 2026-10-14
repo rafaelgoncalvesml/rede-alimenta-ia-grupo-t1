@@ -1,6 +1,8 @@
-# LGPD: mapeamento de dados pessoais (rascunho de 13/10)
+# LGPD: mapeamento de dados pessoais (rascunho de 14/10)
 
 Este arquivo lista o que a API guarda sobre pessoas, onde fica, quem acessa e o que ainda falta.
+Junta duas versoes: a de Rafael (terceiros, direitos do titular) e a de Anthony (lacunas do codigo,
+propostas de schema e checklist). O que depende de decisao do grupo esta marcado como [GRUPO].
 Foi escrito lendo o `schema.sql`, `api/models.py`, `api/auditoria.py`, `docs/auth.md` e o
 `render.yaml`, nao testando o sistema em producao. Nao e parecer juridico e o projeto nao esta
 "em conformidade" com a Lei 13.709/2018. As bases legais da secao 4 sao propostas pro grupo e pro
@@ -26,6 +28,7 @@ II): nada de saude, religiao, origem racial ou biometria.
 | Senha | `usuarios.senha_hash`, argon2 | os mesmos | autenticar | ninguem; nenhuma rota devolve o hash |
 | IP do cliente | log de auditoria, campo `ip` | quem chama a API | rastrear abuso e erro | quem tem acesso ao painel do Render |
 | Id do usuario | log de auditoria | usuario logado | saber quem mudou o que | idem |
+| Texto livre | `lotes.descricao` (ate 500 caracteres) | quem cadastra o lote | descrever o alimento | conforme o papel; nao e dado pessoal, mas alguem pode digitar um |
 
 Alguns pontos sobre esses dados:
 
@@ -74,7 +77,7 @@ Limites que o grupo conhece e que contam aqui: o token nao e revogavel antes dos
 contagem de tentativas de login fica na memoria do processo, e o Supabase free nao tem backup
 automatico.
 
-## 4. Base legal e finalidade (proposta, a confirmar)
+## 4. Base legal e finalidade (proposta, a confirmar) [GRUPO]
 
 Finalidade unica: ligar quem tem alimento sobrando a uma ONG que pode receber, com registro do que
 foi doado. Nao ha uso do dado pra publicidade, venda ou treino do modelo (o modelo de prioridade
@@ -82,13 +85,13 @@ usa so validade, quantidade, categoria e armazenamento do lote, nunca dado do do
 
 | Titular | Base proposta (art. 7) | Por que |
 |---|---|---|
-| Doador pessoa fisica | consentimento (inciso I) ou execucao de procedimento ligado a contrato a pedido do titular (inciso V) | quem se cadastra pede a doacao; precisa de aviso claro e de uma acao afirmativa de aceite, que hoje nao existe porque nao ha tela |
-| Usuario da API (e-mail e senha) | inciso V, o mesmo | sem login nao ha como ligar o doador aos proprios lotes |
+| Doador pessoa fisica e usuario da API | execucao de procedimento ligado a contrato a pedido do titular (inciso V) | quem se cadastra pede a doacao; sem login nao ha como ligar o doador aos proprios lotes |
 | IP no log | legitimo interesse (inciso IX) | seguranca e deteccao de abuso; precisa de teste de balanceamento escrito, que nao existe |
 
-Principios que o projeto pode defender hoje (art. 6): necessidade (e-mail e telefone sao opcionais,
-sem rua nem data de nascimento) e seguranca. O que ainda nao se defende: transparencia e livre
-acesso, porque nao ha aviso de privacidade pro titular (art. 9).
+Se o grupo preferir consentimento (inciso I), hoje nao ha onde guardar o aceite: ver a proposta de
+colunas na secao 5. Principios que o projeto ja defende (art. 6): necessidade (e-mail e telefone sao
+opcionais, sem rua nem data de nascimento) e seguranca. O que ainda nao se defende: transparencia e
+livre acesso, porque nao ha aviso de privacidade pro titular (art. 9) nem tela.
 
 ## 5. Direitos do titular (art. 18) contra o que a API entrega
 
@@ -100,6 +103,21 @@ acesso, porque nao ha aviso de privacidade pro titular (art. 9).
 | Portabilidade | o JSON do `GET` serve de copia | sem endpoint de exportacao nem formato definido |
 | Revogar consentimento | nada | nao ha fluxo |
 | Informacao sobre compartilhamento | esta tabela da secao 2 | nao chega ao titular |
+
+### 5.1 Proposta de schema e API (nao implementada)
+
+| Lacuna | Proposta |
+|---|---|
+| Sem registro de consentimento (art. 7 e 8) | `consentimento_lgpd boolean`, `consentimento_em timestamptz` e `consentimento_versao text` em `doadores` e `usuarios` |
+| Eliminacao (art. 18, VI) barrada pelo 409 | endpoint de anonimizacao: troca nome, documento, telefone e e-mail por valores neutros e mantem os lotes e doacoes pra estatistica |
+| Portabilidade (art. 18, V) | o JSON do `GET /doadores/{id}` basta; falta definir o formato |
+| Texto livre em `lotes.descricao` | aviso na tela; o limite de 500 caracteres ja existe |
+
+### 5.2 Mascaramento de CPF e CNPJ
+
+Hoje a API devolve o documento inteiro, so ao admin e ao proprio doador, e o log nunca o guarda.
+Proposta [GRUPO]: o admin recebe o documento mascarado nas listagens (`***.456.789-**`) e ve o
+numero inteiro so ao abrir um doador. Exige regra na API e tela, e nao esta feito.
 
 A tensao mais concreta e a de eliminar: manter a doacao registrada tem justificativa (prestar contas
 do que a ONG recebeu), mas isso precisa ser dito ao titular e talvez resolvido com anonimizacao
@@ -119,7 +137,12 @@ os logs (painel do Render, procurar o `request_id`), como trocar `JWT_SECRET` e 
 (painel do Render e do Supabase) e como avisar. No Render, `SUPABASE_DB_URL` e `JWT_SECRET` ficam no painel (e a url do banco tambem no `.env` de
 quem desenvolve); trocar o `JWT_SECRET` invalida todos os tokens.
 
-## 8. Pendencias antes de usar com dado real
+## 8. Controlador e canal do titular [GRUPO]
+
+- Controlador: [GRUPO: quem?]
+- Encarregado (art. 41) e canal do titular: [GRUPO: e-mail a definir]
+
+## 9. Pendencias antes de usar com dado real
 
 Ordem do que mais pesa:
 
@@ -136,3 +159,17 @@ Ordem do que mais pesa:
 
 Itens 3, 4 e 6 mexem em schema e API; com o congelamento de features valendo, ficam como proximos
 passos na defesa.
+
+## 10. Checklist
+
+- [x] Inventario de dados
+- [x] Log sem corpo nem querystring (testado em `test_erros.py` e `test_seguranca.py`)
+- [x] Senha em hash, papeis e limites de pedidos
+- [ ] Base legal decidida [GRUPO]
+- [ ] Consentimento no schema
+- [ ] Anonimizacao e eliminacao
+- [ ] Mascaramento de CPF e CNPJ nas listagens [GRUPO]
+- [ ] Retencao definida [GRUPO]
+- [ ] Controlador, encarregado e canal do titular [GRUPO]
+- [ ] Aviso de privacidade na tela
+- [ ] Revisao juridica

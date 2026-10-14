@@ -36,8 +36,8 @@ rodaram no Python 3.14. O `docker build` e o Trivy so rodaram no CI do GitHub (s
 |---|---|---|---|
 | Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo | nao ha tela: o impacto so aparece em JSON e no Swagger |
 | Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade) | dados 100% simulados; a rota `POST /matching/{lote_id}` nao existe, so a funcao; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
-| DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render; nesta branch: `ci.yml`, `docs/lgpd.md`, `docs/stride.md` | sem docker-compose; sem protecao de branch na `main` (o workflow passou no GitHub em 14/10) |
-| Engenharia e defesa (20%) | codigo, README, pitch | README, 455 testes, docs por tema | o README da `main` de 13/10 era o da semana 3 (sem producao, reset e variaveis); o PR dos dias 24 e 25 traz a versao completa; roteiro do pitch e rascunho |
+| DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render, `ci.yml` verde no GitHub, `docker-compose.yml` da API, `docs/lgpd.md`, `docs/stride.md`, 29 testes de ataque | sem protecao de branch na `main` (indisponivel em repo privado free); deploy manual |
+| Engenharia e defesa (20%) | codigo, README, pitch | README, 487 testes, docs por tema | o README da `main` de 13/10 era o da semana 3 (sem producao, reset e variaveis); o PR dos dias 24 e 25 traz a versao completa; roteiro do pitch e rascunho |
 
 Checkpoint 3 do PDF (URL publica, banco em nuvem, README, pitch): URL e banco estao no ar, o README
 existe mas esta desatualizado na `main`, e o pitch e rascunho.
@@ -64,9 +64,11 @@ pro maior:
 3. `docs/lgpd.md` e `docs/stride.md`: feitos neste PR como rascunho. Anthony le e corrige.
 4. Relatorio Bandit: o job do CI guarda `bandit.txt` como artefato a cada execucao. Falta copiar um
    resultado pra `docs/security/` se a banca pedir o arquivo no repo.
-5. Workflow de GitHub Actions: feito neste PR (`.github/workflows/ci.yml`) e verde no GitHub em
-   14/10. Falta ligar a protecao da `main` (exigir PR e checks).
-6. `docker-compose.yml` so da API: nao feito.
+5. Workflow de GitHub Actions: feito e verde no GitHub em 14/10. A protecao da `main` nao existe no
+   plano free de repo privado (a API do GitHub devolve 403); resta o combinado do grupo de mergear
+   so por PR, ou tornar o repo publico.
+6. `docker-compose.yml` so da API: entrou com os testes de Anthony; o job `compose` do CI o sobe
+   com `read_only` e confere `/health`.
 7. Ligar `POST /matching/{lote_id}`: `docs/matching.md` ja traz o trecho da rota. E feature, entao
    precisa do aval do grupo pra furar o congelamento; sem ela, a defesa tem que dizer que a ONG
    da doacao ainda e escolhida por quem chama a API.
@@ -75,9 +77,9 @@ pro maior:
 
 Os itens 2 a 6 nao sao feature de produto e cabem no congelamento.
 
-## O que este PR muda
+## O que os PRs #26 e #27 mudaram
 
-Branch `chore/lgpd-ci-ajustes`, criada de `origin/main`.
+PR #26 (`chore/lgpd-ci-ajustes`) e PR #27 (dias 24 e 25), ja na `main`.
 
 | Mudanca | Arquivo |
 |---|---|
@@ -94,6 +96,25 @@ Python 3.14 (455 testes). No GitHub (14/10) o workflow passou nos tres jobs: ruf
 3.12, Bandit e pip-audit, e build da imagem com Trivy e `/health` do container. Antes disso falhou duas
 vezes por erro nosso: o `pytest` sem `python -m` nao achava o pacote `api`, e a tag da action do
 Trivy estava errada (`0.28.0` em vez de `v0.28.0`; ficou a `v0.36.0`).
+
+## O que o PR de seguranca muda (14/10)
+
+Junta o que ha de aproveitavel no PR #28 de Anthony, sem o README dele (que era o da semana 3 e
+sobrescreveria o atual) e sem a pasta `upload-github/`.
+
+| Mudanca | Arquivo |
+|---|---|
+| 29 testes de ataque: JWT forjado, injecao em campo, filtro, id e login, e log sem token, documento e senha | `api/tests/test_seguranca.py` |
+| `pytest` sem `python -m` | `pytest.ini` |
+| Compose so da API, com `read_only` e sem capabilities; o servico do Streamlit fica comentado | `docker-compose.yml` |
+| STRIDE v2 de Anthony (25 ameacas, com estado e evidencia), ajustada pro CI e o modelo v2 reais | `docs/stride.md` |
+| LGPD fundindo as duas versoes, com propostas de schema, mascaramento e checklist | `docs/lgpd.md` |
+| Testes de ataque e achados do Bandit, pip-audit e Trivy | `docs/security/testes.md`, `docs/security/vulnerabilidades.md` |
+| Job `compose` no CI; `pip-audit` das tres listas de dependencias | `.github/workflows/ci.yml` |
+
+Ficaram de fora: o `run_sast.py` (o CI ja guarda o Bandit como artefato e o import de `subprocess`
+derrubaria o nosso gate), o `bandit-report.json` e o `resumo.md` (caminhos de Windows, ficam velhos) e
+o `app/Dockerfile` (nao ha frontend).
 
 ## Bugs e pontos fracos conhecidos
 
@@ -118,6 +139,6 @@ Nenhum teste falha e o Bandit nao achou nada. Os itens abaixo vem de ler o repo 
 | Quem | Fica com |
 |---|---|
 | Rafael | itens 1, 2 e 9 das decisoes; bugs 3, 5, 6 e 9; conferir URL e variaveis do Render |
-| Anthony | revisar `docs/lgpd.md` e `docs/stride.md`, ver o CI rodar, proteger a `main`, compose |
+| Anthony | revisar `docs/lgpd.md` e `docs/stride.md` (estados e riscos), decidir o que fazer da protecao da `main` |
 | Gustavo | tela minima, se o grupo decidir que entra; senao, preparar o Swagger como demo |
 | Charles | bugs 1, 7, 10 e 11; texto sobre limites do modelo pro pitch; rota de matching se o grupo aprovar |

@@ -89,7 +89,7 @@ docker run -d --name rede-api -p 8000:8000 \
 
 `-e VAR` sem valor copia a variavel do shell, entao a senha do banco nao aparece no comando. Sem `STORAGE=postgres` a API sobe em memoria. A imagem usa Python 3.12, roda com um usuario sem root e traz um healthcheck em `/health`. O `.dockerignore` deixa o `.env` de fora.
 
-Nao existe `docker-compose.yml`: so a imagem da API foi testada. Medidas, o que foi e o que nao foi testado em `docs/container.md`; achados do Trivy em `docs/security/trivy-imagem.md`.
+O `docker-compose.yml` sobe so a API (`docker compose up --build`, com `JWT_SECRET` no `.env`); o servico do Streamlit esta comentado ate o frontend existir. Ele so foi testado no job `compose` do CI, nao na maquina de ninguem. Medidas, o que foi e o que nao foi testado em `docs/container.md`; achados do Trivy em `docs/security/trivy-imagem.md`.
 
 ### Producao
 
@@ -176,7 +176,7 @@ pytest ml
 ruff check .
 ```
 
-Em 13/10: 395 testes em `api` e 63 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit, build e Trivy da imagem, `/health` do container); passou nos tres jobs no GitHub em 14/10, depois de dois ajustes (`python -m pytest` e a tag da action do Trivy).
+Em 14/10: 424 testes em `api` (29 deles de ataque, em `api/tests/test_seguranca.py`) e 63 em `ml`, todos passando, e o ruff sem achados. O fluxo em producao tem seu proprio script (`infra.db.testar_producao`, 17 verificacoes no dia 23). O CI esta em `.github/workflows/ci.yml` (ruff, pytest, Bandit, pip-audit das tres listas de dependencias, build e Trivy da imagem, `/health` do container e `docker compose`); passou nos tres jobs no GitHub em 14/10, depois de dois ajustes (`python -m pytest` e a tag da action do Trivy).
 
 ## Referencia da API
 
@@ -283,6 +283,7 @@ O log de auditoria sai no stdout, uma linha JSON por pedido (`tipo: requisicao`:
 | `docs/deploy-render.md` | deploy, cold start, IP do cliente atras do Render |
 | `docs/security/trivy-imagem.md` | Trivy na imagem e no repo |
 | `docs/lgpd.md`, `docs/stride.md` | dados pessoais e matriz de ameacas (rascunhos, sem revisao) |
+| `docs/security/testes.md`, `docs/security/vulnerabilidades.md` | testes de ataque e achados do Bandit, pip-audit e Trivy com a decisao de cada um |
 | `docs/matching.md`, `docs/seed-demo.md` | matching e seed de demo com ONGs reais |
 | `docs/checkpoint-rubrica.md`, `docs/pitch-roteiro.md`, `docs/arquitetura-perguntas.md` | preparo da defesa |
 | `docs/db-comparacao.md`, `docs/deploy-comparacao.md` | comparacoes que levaram ao Supabase e ao Render |
@@ -294,7 +295,8 @@ Conferido em 13/10 contra a `main` do GitHub:
 
 - Rota de matching (`POST /matching/{lote_id}`). A funcao `ml/matching.py` esta pronta e testada, e o trecho da rota esta em `docs/matching.md`. Hoje a ONG de cada doacao e escolhida por quem chama a API.
 - Frontend e dashboard: `app/` so tem `.gitkeep`. Sem eles a demo visual e o Swagger em `/docs`.
-- `docker-compose.yml`.
+- Teste do `docker compose up` na maquina de alguem: so o CI o rodou.
+- Protecao de branch na `main`: o plano free do GitHub nao oferece em repo privado.
 - Relatorio do Bandit em `docs/security/`. O CI guarda o resultado como artefato a cada execucao.
 - Revisao de `docs/lgpd.md` e `docs/stride.md`, que sao rascunhos.
 
