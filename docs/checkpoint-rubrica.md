@@ -58,8 +58,8 @@ existe mas esta desatualizado na `main`, e o pitch e rascunho.
 Com o congelamento valendo, e escolher entre fazer e declarar como "nao entrou". Do menor custo
 pro maior:
 
-1. Decidir qual seed vai pra defesa: o `seed_demo.py` de Charles (4 ONGs reais, pela API) ou o
-   `reset_demo.py` com `seed_demo.json` do Rafael (reset completo do banco). Os dois coexistem hoje.
+1. Seed da defesa: um so, `data/seed_demo.json` com o conteudo de Charles (4 ONGs reais), carregado
+   pelo `reset_demo.py` do Rafael. Um teste mantem o JSON igual a `api/seed_demo.py`.
 2. Limpar a `main`: `.ruff_cache/` e a linha solta do README. Feito neste PR.
 3. `docs/lgpd.md` e `docs/stride.md`: feitos neste PR como rascunho. Anthony le e corrige.
 4. Relatorio Bandit: o job do CI guarda `bandit.txt` como artefato a cada execucao. Falta copiar um
