@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/33392327/README.md)
 # Rede Alimenta IA
 
 Projeto integrador de Ciberseguranca e DevSecOps (FIAP, Tecnologo em Inteligencia Artificial). Sistema que cadastra lotes de alimentos doados, classifica a prioridade de descarte com um modelo de IA e faz o matching com ONGs por necessidade, capacidade e distancia.
@@ -16,9 +15,10 @@ Orientacao: Prof. M.Sc Oerton Fernandes.
 
 - api/ - backend em FastAPI
 - ml/ - modelo de priorizacao e matching
-- app/ - frontend em Streamlit
-- infra/ - Docker, Compose e configuracao de deploy
+- app/ - reservado ao frontend (hoje so tem um `.gitkeep`)
+- infra/ - schema do banco, scripts de banco e o hello world do deploy de teste
 - docs/ - decisoes tecnicas, STRIDE, LGPD e relatorios de seguranca
+- .github/workflows/ - pipeline de CI
 - data/ - dataset e scripts de dados
 
 ## Como rodar a API (local)
@@ -226,6 +226,16 @@ API; a funcao esta pronta e o trecho da rota esta em `docs/matching.md`.
 
 `render.yaml` sobe a API pela imagem Docker. Variaveis, passo a passo e riscos em
 `docs/deploy-render.md`; a lista completa esta em `.env.example`.
+
+## Qualidade e seguranca
+
+`.github/workflows/ci.yml` roda em todo push na `main` e em todo pull request: `ruff` e `pytest`
+(Python 3.12), Bandit e `pip-audit`, e depois o build da imagem com Trivy (HIGH e CRITICAL com
+correcao publicada derrubam o job) e uma subida do container conferindo `/health`. O deploy no
+Render continua manual. Relatorio do Trivy em `docs/security/trivy-imagem.md`, ameacas em
+`docs/stride.md` e dados pessoais em `docs/lgpd.md` (rascunho, sem revisao juridica).
+
+Ainda nao existe `docker-compose.yml`.
 
 ## Status
 

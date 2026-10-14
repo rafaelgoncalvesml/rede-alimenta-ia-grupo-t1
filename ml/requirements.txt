@@ -1,4 +1,4 @@
 pandas>=2.2
-# fixado: o models/prioridade_v1.joblib so carrega na mesma versao em que foi treinado.
+# fixado: o models/prioridade_v2.joblib so carrega na mesma versao em que foi treinado.
 # scikit-learn 1.8 exige Python 3.11+, entao o Dockerfile da API nao pode ser python:3.10-slim.
 scikit-learn==1.8.0
