@@ -1,0 +1,7 @@
+# Frontend (Streamlit). Rodar da pasta app/: pip install -r requirements.txt && streamlit run dashboard.py
+# Aponta pra API por REDE_ALIMENTA_API_URL (no .env da raiz ou em .streamlit/secrets.toml);
+# sem ela a tela abre em modo demonstracao, sem matching, doacao nem KPI.
+streamlit==1.66.0
+altair==6.3.0
+requests==2.34.2
+python-dotenv==1.2.4

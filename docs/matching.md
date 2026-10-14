@@ -34,7 +34,9 @@ Saida: `{"ranking": [...], "descartadas": [...]}`.
 | `posicao` | 1, 2, 3... ordenado por `distancia_km` e, no empate, por `ong_id` (resultado sempre igual) |
 | `motivo` | `categoria`, `capacidade` ou `sem_coordenada` |
 
-`distancia_km` e `score` cabem em `DoacaoCreate`: a tela manda o do ranking na hora de confirmar.
+O ranking traz tambem o `nome` da ONG. Na doacao (`POST /doacoes`) o servidor calcula `distancia_km` e
+`score` com esta mesma funcao e ignora o que o cliente mandar nesses campos; ONG sem coordenada conhecida
+entra com os dois nulos.
 
 ## Regras
 
@@ -72,22 +74,12 @@ regra da limpeza do dataset) conta como ausente. Ai:
 - Os centros das cidades sao os mesmos de `data/gerar_dataset_v0.py` (um teste garante). Cidade
   fora dessa lista so funciona se doador e ONG tiverem coordenada propria.
 
-## Como a rota chama (pro Rafael)
+## Rota (14/10)
 
-```python
-@router.post("/{lote_id}", dependencies=[Depends(limites.limita("matching", limites.MATCHING))])
-def sugerir(lote_id: int, usuario: Usuario = Depends(admin_ou_doador)) -> dict:
-    db = get_storage()
-    lote = db.buscar("lotes", lote_id)
-    if lote is None:
-        raise HTTPException(status_code=404, detail="Lote nao encontrado")
-    if not e_admin(usuario) and lote["doador_id"] != usuario.doador_id:
-        nega(usuario, "matching de lote de outro doador")
-    try:
-        return matching(lote, db.buscar("doadores", lote["doador_id"]), db.listar("ongs"))
-    except ValueError as erro:
-        raise HTTPException(status_code=422, detail=str(erro)) from None
-```
+`api/routers/matching.py`: `POST /matching/{lote_id}`, so admin e o doador dono do lote (os outros papeis
+recebem 403, na matriz de `api/tests/test_acesso_negado.py`), limite de 20 pedidos por minuto. Lote que
+nao existe: 404. Lote que nao esta `disponivel`: 409. Doador sem coordenada e sem centro de cidade: 422.
+Testes em `api/tests/test_matching_rota.py`, incluindo a doacao gravando a distancia do servidor.
 
 Verificado de ponta a ponta com o seed de demo (`docs/seed-demo.md`): lote, prioridade do modelo,
-matching, doacao confirmada e KPI.
+matching, doacao confirmada e KPI, pela API e pela tela de Matchings do Streamlit (papeis doador e ONG).

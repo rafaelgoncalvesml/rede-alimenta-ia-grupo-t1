@@ -16,7 +16,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -30,6 +30,7 @@ from psycopg.types.json import Jsonb
 from api.ia import classificar_lote
 from api.models import DoadorCreate, LoteCreate, OngCreate
 from api.storage import COLUNAS
+from ml import relogio
 
 RAIZ = Path(__file__).resolve().parents[2]
 SEED = RAIZ / "data" / "seed_demo.json"
@@ -51,7 +52,7 @@ def montar(seed):
                 raise ValueError(f"lote de doador que nao esta no seed: {l['doador']}")
             corpo = {"doador_id": 1, "descricao": l["descricao"], "quantidade_kg": l["quantidade_kg"],
                      "armazenamento": l["armazenamento"],
-                     "validade": date.today() + timedelta(days=l["validade_em_dias"])}
+                     "validade": relogio.hoje() + timedelta(days=l["validade_em_dias"])}
             lote = LoteCreate(**corpo).model_dump(mode="json")
             lote.update(classificar_lote(lote))
             lote["doador"] = l["doador"]

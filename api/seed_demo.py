@@ -12,6 +12,7 @@ import os
 from datetime import date, timedelta
 
 from api.seed_dev import _req as _http
+from ml import relogio
 
 # Fonte: Receita Federal via BrasilAPI (situacao ATIVA em 12/10/2026; endereco como no cadastro da
 # Receita). Coordenada: OpenStreetMap/Nominatim, (c) OpenStreetMap contributors, nivel de rua.
@@ -77,7 +78,7 @@ LOTES = [
 
 def popular(req, hoje: date | None = None) -> dict:
     """`req(metodo, caminho, corpo=None)` devolve o JSON da resposta e levanta se a API recusar."""
-    hoje = hoje or date.today()
+    hoje = hoje or relogio.hoje()
     criados = {"doadores": 0, "ongs": 0, "lotes": 0}
 
     doadores = {d["documento"]: d for d in req("GET", "/doadores")}

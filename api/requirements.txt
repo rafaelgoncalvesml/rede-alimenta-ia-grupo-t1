@@ -10,3 +10,5 @@ argon2-cffi==25.1.0
 scikit-learn==1.8.0
 joblib>=1.3
 pandas>=2.2
+# o fuso de Brasilia (ml/relogio.py): no Windows e em imagem sem /usr/share/zoneinfo o Python nao tem a base
+tzdata==2026.5

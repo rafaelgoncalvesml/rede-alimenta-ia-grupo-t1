@@ -4,6 +4,7 @@ from api import auditoria, limites
 from api.models import Doacao, DoacaoCreate, Papel, StatusDoacao
 from api.seguranca import Usuario, e_admin, exige, nega, usuario_atual
 from api.storage import get_storage
+from ml.matching import matching
 
 router = APIRouter(prefix="/doacoes", tags=["doacoes"])
 
@@ -27,6 +28,19 @@ def _confere_ong_recebe(lote: dict, ong: dict) -> None:
         raise HTTPException(status_code=409, detail="A ONG nao declarou necessidade dessa categoria")
 
 
+def _distancia_e_score(lote: dict, doador: dict, ong: dict) -> tuple[float | None, float | None]:
+    """Calculados aqui com o mesmo ml.matching do POST /matching: o que o cliente manda nesses dois
+    campos e ignorado, entao nao da pra gravar um score inventado. Sem coordenada (nem do centro da
+    cidade) de um dos lados, a doacao entra sem distancia."""
+    try:
+        ranking = matching(lote, doador, [ong])["ranking"]
+    except ValueError:  # doador sem coordenada e sem centro conhecido
+        return None, None
+    if not ranking:  # ONG sem coordenada; categoria e capacidade ja passaram em _confere_ong_recebe
+        return None, None
+    return ranking[0]["distancia_km"], ranking[0]["score"]
+
+
 @router.post("", response_model=Doacao, status_code=201,
              dependencies=[Depends(limites.limita("doacoes", limites.DOACOES))])
 def confirmar_doacao(
@@ -42,7 +56,8 @@ def confirmar_doacao(
     if ong is None:
         raise HTTPException(status_code=404, detail="ONG nao encontrada")
     _confere_ong_recebe(lote, ong)
-    doacao = db.confirmar_doacao(dados.lote_id, dados.ong_id, dados.distancia_km, dados.score)
+    distancia_km, score = _distancia_e_score(lote, db.buscar("doadores", lote["doador_id"]), ong)
+    doacao = db.confirmar_doacao(dados.lote_id, dados.ong_id, distancia_km, score)
     if doacao is None:
         raise HTTPException(status_code=409, detail="Lote nao esta disponivel")
     auditoria.registrar("doacao.confirmada", doacao_id=doacao["id"], lote_id=dados.lote_id,
