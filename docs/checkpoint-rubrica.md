@@ -11,13 +11,13 @@ depende do primeiro).
 
 O Render roda a versao de antes de tudo isso (o deploy e manual).
 
-Atualizacao de 14/10: a branch `feat/frontend-matching-relogio` (ainda sem PR) acrescenta a rota
-`POST /matching/{lote_id}`, o frontend em Streamlit e a data de hoje no fuso de Brasilia. Onde a
-tabela abaixo fala do estado da `main` e a branch muda a resposta, a linha traz os dois.
+Atualizacao de 14/10: o PR #33 (`0baac2b`) levou pra `main` a rota `POST /matching/{lote_id}`, o
+frontend em Streamlit e a data de hoje no fuso de Brasilia. Um PR seguinte (`feat/dashboard-mapa-seguranca`)
+acrescenta o mapa de calor e o bloco de seguranca ao dashboard e a imagem Docker do frontend.
 
 ## O que rodou agora
 
-### Branch `feat/frontend-matching-relogio` (14/10)
+### PR #33 (14/10, antes do merge)
 
 | Verificacao | Resultado |
 |---|---|
@@ -32,7 +32,7 @@ login como doador e como ONG, cadastro de lote (a IA classificou `alface america
 hortifruti), ranking do `/matching` com distancia e score do servidor, confirmacao da doacao
 (gravada com 8,17 km e score 0,0817; um score forjado no corpo foi ignorado) e Relatorios com os KPIs
 de impacto e IA. Nao rodei `docker build` nem Trivy (so no CI), nao testei contra o banco em nuvem
-nem a producao, e o CI do GitHub ainda nao rodou nesta branch.
+nem a producao. O CI do GitHub passou nos 4 jobs no PR e na `main`.
 
 Dois defeitos achados nesse teste e corrigidos em `app/services/api_client.py`: a tela pedia o
 ranking ao `/matching` a cada clique (a rota aceita 20 pedidos por minuto, entao a tela cairia na
@@ -64,25 +64,26 @@ rodaram no Python 3.14. O `docker build` e o Trivy so rodaram no CI do GitHub (s
 
 | Eixo (peso) | Pede | Estado | Lacuna |
 |---|---|---|---|
-| Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo. Na branch, o Streamlit mostra o impacto em Relatorios | na `main` nao ha tela (so JSON e Swagger); a tela nao esta publicada e nao mostra o impacto por regiao |
-| Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade); a rota `POST /matching/{lote_id}` entra pela branch | dados 100% simulados; na `main` so existe a funcao, sem rota; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
+| Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo. O Streamlit mostra impacto, mapa de calor e seguranca em Relatorios | a tela nao esta publicada (so local) e o mapa e por cidade, nao por bairro de carencia |
+| Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade); a rota `POST /matching/{lote_id}` esta na `main` desde o PR #33 | dados 100% simulados; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
 | DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render, `ci.yml` verde no GitHub, `docker-compose.yml` da API, `docs/lgpd.md`, `docs/stride.md`, 29 testes de ataque | sem protecao de branch na `main` (indisponivel em repo privado free); deploy manual |
-| Engenharia e defesa (20%) | codigo, README, pitch | README, 487 testes na `main` (501 na branch), docs por tema | o README da `main` de 13/10 era o da semana 3; o PR dos dias 24 e 25 trouxe a versao completa; roteiro do pitch ainda e rascunho |
+| Engenharia e defesa (20%) | codigo, README, pitch | README, 501 testes, docs por tema | o README da `main` de 13/10 era o da semana 3; o PR dos dias 24 e 25 trouxe a versao completa; roteiro do pitch ainda e rascunho |
 
 Checkpoint 3 do PDF (URL publica, banco em nuvem, README, pitch): URL e banco estao no ar, o README
-esta completo na `main` e o pitch e rascunho. A URL publica serve a API antiga; o frontend nao tem URL.
+esta completo na `main` e o pitch e rascunho. A URL publica serve a API antiga (falta o redeploy); o frontend nao tem URL.
 
 ## Dashboard (o PDF pede tres blocos de KPI)
 
 | Bloco do PDF | Backend | Tela |
 |---|---|---|
-| Impacto social: kg salvos e refeicoes por regiao | `/kpis/impacto` (`por_estado`, `por_dia`) | na branch: cards de impacto em Relatorios, sem recorte por regiao |
-| Seguranca (SAST): saude do pipeline, vulnerabilidades, security gates | `/kpis/seguranca` nao existe | nao existe |
-| IA insights: acuracia e tempo medio de match | `/kpis/ia` e `tempo_medio_match_s` | na branch: `/kpis/ia` e tempo medio de match em Relatorios |
-| Mapa de calor | `historico_simulado.json` tem coordenadas, sem endpoint agregado | nao existe |
+| Impacto social: kg salvos e refeicoes por regiao | `/kpis/impacto` (`por_estado`, `por_dia`) | cards de impacto em Relatorios e mapa de calor por ONG, com grafico de kg por cidade |
+| Seguranca (SAST): saude do pipeline, vulnerabilidades, security gates | nao ha endpoint: le `app/dados/seguranca.json`, gerado por `infra/gerar_seguranca.py` | bloco "Seguranca do pipeline" em Relatorios: gates do CI, Bandit, pip-audit, achados corrigidos e aceitos |
+| IA insights: acuracia e tempo medio de match | `/kpis/ia` e `tempo_medio_match_s` | `/kpis/ia` e tempo medio de match em Relatorios |
+| Mapa de calor | agregado na tela a partir de `historico_simulado.json` ou das doacoes da API | mapa de calor em Relatorios (historico rotulado como simulado) |
 
-Na `main`, `app/` so tem `.gitkeep`; o Streamlit esta na branch. O bloco de seguranca e o mapa de
-calor seguem sem tela, e a defesa deve dizer isso. Plano B: demo no Swagger em `/docs`.
+O bloco de seguranca mostra um arquivo gerado (nao consulta o CI ao vivo) e o mapa mostra onde a
+comida chegou, nao carencia: a defesa deve dizer as duas coisas. O recorte por estado nao tem tela
+propria (o historico simulado so tem SP). Plano B: demo no Swagger em `/docs`.
 
 ## Decisoes pro grupo (14/10)
 
@@ -100,13 +101,14 @@ pro maior:
    so por PR, ou tornar o repo publico.
 6. `docker-compose.yml` so da API: entrou com os testes de Anthony; o job `compose` do CI o sobe
    com `read_only` e confere `/health`.
-7. Ligar `POST /matching/{lote_id}`: feito na branch `feat/frontend-matching-relogio`, com 20 pedidos
-   por minuto, dono do lote ou admin, e o `POST /doacoes` gravando distancia e score calculados no
-   servidor. Falta o aval do grupo pra furar o congelamento e o merge.
-8. Tela minima (Streamlit chamando `/kpis/impacto` e `/kpis/ia`): feita na branch, testada a mao em 14/10
-   contra a API local com os papeis doador e ONG (ver acima). Falta o merge e decidir se vai ao ar.
+7. Ligar `POST /matching/{lote_id}`: feito e na `main` (PR #33), com 20 pedidos por minuto, dono do
+   lote ou admin, e o `POST /doacoes` gravando distancia e score calculados no servidor.
+8. Tela minima (Streamlit chamando `/kpis/impacto` e `/kpis/ia`): feita e na `main`, testada a mao em
+   14/10 contra a API local com os papeis doador e ONG (ver acima). Falta decidir se vai ao ar
+   (`docs/deploy-app.md`).
 9. Redeploy no Render com a versao final, ja que o deploy e manual e o que esta no ar e antigo.
-   Segue aberto e so faz sentido depois do merge dos itens 7 e 8.
+   Segue aberto: em 14/10 o Render recusou o deploy (incidente de builds nos servicos free) e a
+   producao continua no `e01b420`.
 
 Os itens 2 a 6 nao sao feature de produto e cabem no congelamento.
 
