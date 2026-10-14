@@ -67,7 +67,7 @@ que nao entrou.
    pra dizer o que guardamos e por que.
 4. **Pipeline em CI** (ruff, pytest, Bandit, Trivy, build) e `docker-compose`: nao existem. O
    deploy hoje e manual, pelo painel do Render.
-5. **Rotacionar o usuario do Atlas** (o valor antigo continua no historico do git).
+5. ~~Rotacionar o usuario do Atlas~~ feito em 14/10: usuario apagado no painel (o valor antigo segue no historico do git, mas nao vale mais).
 
 ## Pendencias do Rafael pro dia 24
 
