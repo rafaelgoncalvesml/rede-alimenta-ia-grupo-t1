@@ -1,4 +1,4 @@
-# Checkpoint contra a rubrica (13/10, entrega e defesa em 15/10)
+# Checkpoint contra a rubrica (13/10, atualizado em 14/10; entrega e defesa em 15/10)
 
 A entrega e a defesa foram adiantadas pra 15/10. Este arquivo cruza cada entregavel do PDF do
 professor com o que existe no repo hoje.
@@ -11,7 +11,37 @@ depende do primeiro).
 
 O Render roda a versao de antes de tudo isso (o deploy e manual).
 
+Atualizacao de 14/10: a branch `feat/frontend-matching-relogio` (ainda sem PR) acrescenta a rota
+`POST /matching/{lote_id}`, o frontend em Streamlit e a data de hoje no fuso de Brasilia. Onde a
+tabela abaixo fala do estado da `main` e a branch muda a resposta, a linha traz os dois.
+
 ## O que rodou agora
+
+### Branch `feat/frontend-matching-relogio` (14/10)
+
+| Verificacao | Resultado |
+|---|---|
+| `pytest api` / `pytest ml` | 436 / 65 passaram, 0 falhas (501 no total) |
+| `ruff check .` | sem achados |
+| `bandit -r api ml infra` (sem os testes) | 0 achados |
+| `pip-audit` em `api`, `ml`, `app` e `infra/db` | 0 vulnerabilidades nas quatro listas |
+| Segredos nos arquivos alterados | nenhum; `.env` e `backups/` seguem no `.gitignore` |
+
+Streamlit testado a mao em 14/10 contra a API local em memoria (seed da demo, usuarios de teste):
+login como doador e como ONG, cadastro de lote (a IA classificou `alface americana` como
+hortifruti), ranking do `/matching` com distancia e score do servidor, confirmacao da doacao
+(gravada com 8,17 km e score 0,0817; um score forjado no corpo foi ignorado) e Relatorios com os KPIs
+de impacto e IA. Nao rodei `docker build` nem Trivy (so no CI), nao testei contra o banco em nuvem
+nem a producao, e o CI do GitHub ainda nao rodou nesta branch.
+
+Dois defeitos achados nesse teste e corrigidos em `app/services/api_client.py`: a tela pedia o
+ranking ao `/matching` a cada clique (a rota aceita 20 pedidos por minuto, entao a tela cairia na
+triagem local), e a URL `localhost` custava cerca de 2 s por chamada no Windows (o `requests` tenta
+`::1` antes de `127.0.0.1`), o que deixava cada clique em mais de 10 s. O ranking agora fica em cache
+na sessao por 30 s e o `localhost` vira `127.0.0.1`. Pendente: pra ONG, a tela de inicio ainda diz
+"Quero doar alimentos".
+
+### `origin/main` em 13/10
 
 Clone limpo da `origin/main` num diretorio novo, venv novo, `pip install -r api/requirements-dev.txt`:
 
@@ -34,24 +64,25 @@ rodaram no Python 3.14. O `docker build` e o Trivy so rodaram no CI do GitHub (s
 
 | Eixo (peso) | Pede | Estado | Lacuna |
 |---|---|---|---|
-| Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo | nao ha tela: o impacto so aparece em JSON e no Swagger |
-| Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade) | dados 100% simulados; a rota `POST /matching/{lote_id}` nao existe, so a funcao; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
+| Impacto social (30%) | relevancia, utilidade, empatia | API, `/kpis/impacto`, seed de demo com 4 ONGs reais, reset da demo. Na branch, o Streamlit mostra o impacto em Relatorios | na `main` nao ha tela (so JSON e Swagger); a tela nao esta publicada e nao mostra o impacto por regiao |
+| Qualidade da IA (20%) | eficacia do modelo, dados abertos, bibliotecas gratis | Random Forest v2, F1 macro 0,669 contra 0,610 da regra por dias; 63 testes em `ml`; `ml/matching.py` pronto (haversine, filtro por categoria e capacidade); a rota `POST /matching/{lote_id}` entra pela branch | dados 100% simulados; na `main` so existe a funcao, sem rota; o README de Charles diz que a diferenca pro baseline vai de -0,001 a +0,117 de F1 (IC 95%) |
 | DevSecOps (30%) | pipeline CI/CD, SAST, container | Dockerfile sem root, Trivy corrigido, auth, limites, auditoria, deploy no Render, `ci.yml` verde no GitHub, `docker-compose.yml` da API, `docs/lgpd.md`, `docs/stride.md`, 29 testes de ataque | sem protecao de branch na `main` (indisponivel em repo privado free); deploy manual |
-| Engenharia e defesa (20%) | codigo, README, pitch | README, 487 testes, docs por tema | o README da `main` de 13/10 era o da semana 3 (sem producao, reset e variaveis); o PR dos dias 24 e 25 traz a versao completa; roteiro do pitch e rascunho |
+| Engenharia e defesa (20%) | codigo, README, pitch | README, 487 testes na `main` (501 na branch), docs por tema | o README da `main` de 13/10 era o da semana 3; o PR dos dias 24 e 25 trouxe a versao completa; roteiro do pitch ainda e rascunho |
 
 Checkpoint 3 do PDF (URL publica, banco em nuvem, README, pitch): URL e banco estao no ar, o README
-existe mas esta desatualizado na `main`, e o pitch e rascunho.
+esta completo na `main` e o pitch e rascunho. A URL publica serve a API antiga; o frontend nao tem URL.
 
 ## Dashboard (o PDF pede tres blocos de KPI)
 
 | Bloco do PDF | Backend | Tela |
 |---|---|---|
-| Impacto social: kg salvos e refeicoes por regiao | `/kpis/impacto` (`por_estado`, `por_dia`) | nao existe |
+| Impacto social: kg salvos e refeicoes por regiao | `/kpis/impacto` (`por_estado`, `por_dia`) | na branch: cards de impacto em Relatorios, sem recorte por regiao |
 | Seguranca (SAST): saude do pipeline, vulnerabilidades, security gates | `/kpis/seguranca` nao existe | nao existe |
-| IA insights: acuracia e tempo medio de match | `/kpis/ia` e `tempo_medio_match_s` | nao existe |
+| IA insights: acuracia e tempo medio de match | `/kpis/ia` e `tempo_medio_match_s` | na branch: `/kpis/ia` e tempo medio de match em Relatorios |
 | Mapa de calor | `historico_simulado.json` tem coordenadas, sem endpoint agregado | nao existe |
 
-`app/` continua so com `.gitkeep`. Plano B ja documentado: demo no Swagger em `/docs`.
+Na `main`, `app/` so tem `.gitkeep`; o Streamlit esta na branch. O bloco de seguranca e o mapa de
+calor seguem sem tela, e a defesa deve dizer isso. Plano B: demo no Swagger em `/docs`.
 
 ## Decisoes pro grupo (14/10)
 
@@ -69,11 +100,13 @@ pro maior:
    so por PR, ou tornar o repo publico.
 6. `docker-compose.yml` so da API: entrou com os testes de Anthony; o job `compose` do CI o sobe
    com `read_only` e confere `/health`.
-7. Ligar `POST /matching/{lote_id}`: `docs/matching.md` ja traz o trecho da rota. E feature, entao
-   precisa do aval do grupo pra furar o congelamento; sem ela, a defesa tem que dizer que a ONG
-   da doacao ainda e escolhida por quem chama a API.
-8. Tela minima (Streamlit chamando `/kpis/impacto` e `/kpis/ia`). Maior risco de prazo.
+7. Ligar `POST /matching/{lote_id}`: feito na branch `feat/frontend-matching-relogio`, com 20 pedidos
+   por minuto, dono do lote ou admin, e o `POST /doacoes` gravando distancia e score calculados no
+   servidor. Falta o aval do grupo pra furar o congelamento e o merge.
+8. Tela minima (Streamlit chamando `/kpis/impacto` e `/kpis/ia`): feita na branch, testada a mao em 14/10
+   contra a API local com os papeis doador e ONG (ver acima). Falta o merge e decidir se vai ao ar.
 9. Redeploy no Render com a versao final, ja que o deploy e manual e o que esta no ar e antigo.
+   Segue aberto e so faz sentido depois do merge dos itens 7 e 8.
 
 Os itens 2 a 6 nao sao feature de produto e cabem no congelamento.
 
